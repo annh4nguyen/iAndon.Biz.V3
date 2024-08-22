@@ -17,6 +17,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System.Collections;
+using System.Reflection.Emit;
 
 namespace iAndon.Biz.Logic
 {
@@ -521,7 +522,6 @@ namespace iAndon.Biz.Logic
                         {
                             workPlan.STATUS = (int)PLAN_STATUS.NotStart;
                         }
-
 
                         Shift shift = CheckShift(tblWorkPlan.DAY, tblWorkPlan.SHIFT_ID);
 
@@ -1054,103 +1054,131 @@ namespace iAndon.Biz.Logic
                                 MES_WORK_PLAN_DETAIL updatePlanDetail = null;
                                 string _workPlanId = "";
 
-                                MES_WORK_PLAN_DETAIL newItem = _dbContext.MES_WORK_PLAN_DETAIL.FirstOrDefault(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID);
-                                int _status = newItem.STATUS;
-                                //Lấy NewItem kiểu từ Logs --> Vì Save vào nó lại bị mất
-                                List<MES_WORK_PLAN_DETAIL_HISTORY> _historyList = _dbContext.MES_WORK_PLAN_DETAIL_HISTORY.Where(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID && x.UPDATED > _LastTimeReload).ToList();
-                                MES_WORK_PLAN_DETAIL_HISTORY _history = null;
-                                if (_historyList.Count > 0)
+                                MES_WORK_PLAN_DETAIL oldItem = SearchWorkPlanDetailById(lastUpdate.OBJECT_ID);
+                                if (oldItem != null)
                                 {
-                                    _history = _historyList.LastOrDefault();
-                                }
-                                if (_history != null)
-                                {
-                                    newItem = GetWorkPlanDetailByHistory(_history);
-                                    newItem.STATUS = _status;
-                                }
-
-                                //Nếu là xóa thì phải tìm xem thằng nào chứa nó thì xóa đi
-                                if (lastUpdate.UPDATE_EVENT == "DELETE")
-                                {
-                                    _Logger.Write(_LogCategory, $"Delete WorkPlanDetail ID = [{newItem.WORK_PLAN_DETAIL_ID}] at Line {newItem.LINE_ID}", LogType.Info);
-                                    //Xiên hết sạch luôn
-                                    WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == newItem.WORK_PLAN_ID);
-                                    if (workPlan != null)
+                                    //Nếu là xóa hoặc update thì phải tìm xem thằng nào chi tiết xóa đi trước 
+                                    if (lastUpdate.UPDATE_EVENT == "DELETE" || lastUpdate.UPDATE_EVENT == "UPDATE")
                                     {
-                                        if (workPlan.STATUS == (byte)PLAN_STATUS.Proccessing)
+                                        _Logger.Write(_LogCategory, $"Delete WorkPlanDetail ID = [{oldItem.WORK_PLAN_DETAIL_ID}] at Line {oldItem.LINE_ID}", LogType.Info);
+                                        //Xiên hết sạch luôn
+                                        WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == oldItem.WORK_PLAN_ID);
+                                        if (workPlan != null)
                                         {
-                                            //Xóa trong reportLine
-                                            RemoveWorkPlanDetail(newItem.LINE_ID, newItem.WORK_PLAN_DETAIL_ID);
+                                            if (workPlan.STATUS == (byte)PLAN_STATUS.Proccessing)
+                                            {
+                                                //Xóa trong reportLine
+                                                RemoveWorkPlanDetail(oldItem.LINE_ID, oldItem.WORK_PLAN_DETAIL_ID);
+                                            }
                                         }
+                                        //Sau đó remove đi
+                                        workPlan.WorkPlanDetails.Remove(oldItem);
                                     }
-                                    continue;
                                 }
 
                                 //Giờ thì làm đến thằng thêm/sửa
-                                Line updatedLine = null;
+                                //Thêm hay sửa thì cũng là thêm, vì sửa thì cũng xóa bên trên rồi
+                                //Lấy lại cái mới
+                                MES_WORK_PLAN_DETAIL newItem = null; //_dbContext.MES_WORK_PLAN_DETAIL.FirstOrDefault(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID);
 
-                                if (newItem != null)
+                                if (lastUpdate.UPDATE_EVENT != "DELETE")
                                 {
-                                    _workPlanId = newItem.WORK_PLAN_ID;
-                                    WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID== _workPlanId);
-                                    string _lineId = newItem.LINE_ID;
-
-                                    if (workPlan == null)
+                                    List<MES_WORK_PLAN_DETAIL_HISTORY> _historyList = _dbContext.MES_WORK_PLAN_DETAIL_HISTORY.Where(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID && x.UPDATED > _LastTimeReload).ToList();
+                                    MES_WORK_PLAN_DETAIL_HISTORY _history = null;
+                                    if (_historyList.Count > 0)
                                     {
-                                        //Trường hợp chưa có, chưa chạy
-                                        MES_WORK_PLAN tblWorkPlan = _dbContext.MES_WORK_PLAN.FirstOrDefault(x => x.WORK_PLAN_ID == _workPlanId);
-                                        if (workPlan == null)
-                                        {
-                                            if (_AutoAddWorkPlan)
-                                            {
-                                                workPlan = CreateWorkPlan(_lineId, eventTime);
-                                            }
-                                        }
-
-                                        if (tblWorkPlan != null)
-                                        {
-                                            workPlan = new WorkPlan().Cast(tblWorkPlan);
-
-                                            if (workPlan.STATUS == (byte)PLAN_STATUS.Draft)
-                                            {
-                                                workPlan.STATUS = (byte)PLAN_STATUS.NotStart;
-                                            }
-                                            Shift shift = CheckShift(tblWorkPlan.DAY, tblWorkPlan.SHIFT_ID);
-                                            workPlan.PlanStart = shift.Start;
-                                            workPlan.PlanFinish = shift.Finish;
-
-                                            workPlan.WorkPlanDetails.Add(newItem);
-
-                                            _WorkPlans.Add(workPlan);
-                                        }
-
-                                        //Lần sau tự tính toán và khởi tạo chạy sau
-                                        continue;
+                                        _history = _historyList.LastOrDefault();
+                                    }
+                                    if (_history != null)
+                                    {
+                                        newItem = GetWorkPlanDetailByHistory(_history);
                                     }
 
-                                    //Trường hợp đã có rồi nhưng sửa hoặc thêm mới!
-                                    updatedLine = _Lines.FirstOrDefault(x => x.LINE_ID == workPlan.LINE_ID);
-                                    updatePlanDetail = newItem;
+                                    Line updatedLine = null;
 
-                                    //Chỗ này kiểm tra xem có chưa để thêm vào
-
-                                    MES_WORK_PLAN_DETAIL checkItem = workPlan.WorkPlanDetails.FirstOrDefault(x => x.WORK_PLAN_DETAIL_ID == updatePlanDetail.WORK_PLAN_DETAIL_ID);
-                                    if (checkItem != null)
+                                    if (newItem != null)
                                     {
-                                        workPlan.WorkPlanDetails.Remove(updatePlanDetail);
-                                        _Logger.Write(_LogCategory, $"Update WorkPlanDetail ID = [{updatePlanDetail.WORK_PLAN_DETAIL_ID}] at Line {updatedLine.LINE_ID}", LogType.Info);
+                                        _workPlanId = newItem.WORK_PLAN_ID;
+                                        WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == _workPlanId);
+                                        string _lineId = newItem.LINE_ID;
+
+                                        if (workPlan == null)
+                                        {
+                                            //Trường hợp chưa có, chưa chạy
+                                            MES_WORK_PLAN tblWorkPlan = _dbContext.MES_WORK_PLAN.FirstOrDefault(x => x.WORK_PLAN_ID == _workPlanId);
+                                            if (workPlan == null)
+                                            {
+                                                if (_AutoAddWorkPlan)
+                                                {
+                                                    workPlan = CreateWorkPlan(_lineId, eventTime);
+                                                }
+                                            }
+
+                                            if (tblWorkPlan != null)
+                                            {
+                                                workPlan = new WorkPlan().Cast(tblWorkPlan);
+
+                                                if (workPlan.STATUS == (byte)PLAN_STATUS.Draft)
+                                                {
+                                                    workPlan.STATUS = (byte)PLAN_STATUS.NotStart;
+                                                }
+                                                Shift shift = CheckShift(tblWorkPlan.DAY, tblWorkPlan.SHIFT_ID);
+                                                workPlan.PlanStart = shift.Start;
+                                                workPlan.PlanFinish = shift.Finish;
+
+                                                workPlan.WorkPlanDetails.Add(newItem);
+
+                                                _WorkPlans.Add(workPlan);
+                                            }
+
+                                            //Lần sau tự tính toán và khởi tạo chạy sau
+                                            continue;
+                                        }
+
+                                        //Trường hợp đã có rồi nhưng sửa hoặc thêm mới!
+                                        updatedLine = _Lines.FirstOrDefault(x => x.LINE_ID == workPlan.LINE_ID);
+                                        updatePlanDetail = newItem;
+
+                                        //Chỗ này kiểm tra xem có chưa để thêm vào
+
+                                        MES_WORK_PLAN_DETAIL checkItem = workPlan.WorkPlanDetails.FirstOrDefault(x => x.WORK_PLAN_DETAIL_ID == updatePlanDetail.WORK_PLAN_DETAIL_ID);
+                                        if (checkItem != null)
+                                        {
+                                            _Logger.Write(_LogCategory, $"Update WorkPlanDetail ID = [{updatePlanDetail.WORK_PLAN_DETAIL_ID}] at Line {updatedLine.LINE_ID}", LogType.Info);
+                                        }
+                                        else
+                                        {
+                                            _Logger.Write(_LogCategory, $"Add WorkPlanDetail ID = [{updatePlanDetail.WORK_PLAN_DETAIL_ID}] at Line {updatedLine.LINE_ID}", LogType.Info);
+                                        }
+                                        //Add vào rồi trước đã, rồi xử lý sau
+                                        workPlan.WorkPlanDetails.Add(updatePlanDetail);
+
+                                        //Đang chạy thì khởi tạo vào chạy luôn
+                                        if (workPlan.STATUS == (byte)PLAN_STATUS.Proccessing)
+                                        {
+                                            AddWorkPlanDetail2Time(updatedLine.WorkPlan, updatePlanDetail);
+                                        }
+
+                                    }
+                                }
+
+                                //Tính toán thời gian bắt đầu và Kết thúc cho ca chạy đó
+                                if (newItem != null)
+                                {
+                                    UpdateBackLineEvent(newItem.LINE_ID, eventTime);
+                                }
+                                if (oldItem != null)
+                                {
+                                    if (newItem == null)
+                                    {
+                                        UpdateBackLineEvent(oldItem.LINE_ID, eventTime);
                                     }
                                     else
                                     {
-                                        _Logger.Write(_LogCategory, $"Add WorkPlanDetail ID = [{updatePlanDetail.WORK_PLAN_DETAIL_ID}] at Line {updatedLine.LINE_ID}", LogType.Info);
-                                    }
-                                    //Add vào rồi trước đã, rồi xử lý sau
-                                    workPlan.WorkPlanDetails.Add(updatePlanDetail);
-
-                                    //Đang chạy thì khởi tạo vào chạy luôn
-                                    if (workPlan.STATUS == (byte)PLAN_STATUS.Proccessing)
-                                    {
-                                        AddWorkPlanDetail2Time(updatedLine.WorkPlan, updatePlanDetail);
+                                        if (newItem.LINE_ID != oldItem.LINE_ID)
+                                        {
+                                            UpdateBackLineEvent(oldItem.LINE_ID, eventTime);
+                                        }
                                     }
 
                                 }
@@ -1494,13 +1522,38 @@ namespace iAndon.Biz.Logic
                                 }
                                 else
                                 {
-                                    MES_REPORT_LINE_DETAIL reportDetail = line.ReportLineDetails.FirstOrDefault(x => x.WORK_PLAN_DETAIL_ID == planDetail.WORK_PLAN_DETAIL_ID);
-                                    tblWorkPlanDetail.STATUS = planDetail.STATUS;
-                                    if (reportDetail != null)
+                                    if (planDetail.STATUS == (int)PLAN_STATUS.Ready2Cancel)
                                     {
-                                        tblWorkPlanDetail.FINISH_AT = reportDetail.FINISH_AT;
+                                        _dbContext.MES_WORK_PLAN_DETAIL.Remove(tblWorkPlanDetail);
                                     }
-                                    _dbContext.Entry(tblWorkPlanDetail).State = System.Data.Entity.EntityState.Modified;
+                                    else
+                                    {
+                                        tblWorkPlanDetail.STATUS = planDetail.STATUS;
+                                        tblWorkPlanDetail.PLAN_START = planDetail.PLAN_START;
+                                        tblWorkPlanDetail.PLAN_FINISH = planDetail.PLAN_FINISH;
+                                        tblWorkPlanDetail.PO_CODE = planDetail.PO_CODE;
+                                        tblWorkPlanDetail.WORK_ORDER_PLAN_CODE = planDetail.WORK_ORDER_PLAN_CODE;
+                                        tblWorkPlanDetail.WORK_ORDER_CODE = planDetail.WORK_ORDER_CODE;
+                                        tblWorkPlanDetail.LINE_ID = planDetail.LINE_ID;
+                                        tblWorkPlanDetail.DAY = planDetail.DAY;
+                                        tblWorkPlanDetail.PRODUCT_ID = planDetail.PRODUCT_ID;
+                                        tblWorkPlanDetail.PRODUCT_CODE = planDetail.PRODUCT_CODE;
+                                        tblWorkPlanDetail.CONFIG_ID = planDetail.CONFIG_ID;
+                                        tblWorkPlanDetail.STATION_QUANTITY = planDetail.STATION_QUANTITY;
+                                        tblWorkPlanDetail.BATCH = planDetail.BATCH;
+                                        tblWorkPlanDetail.TAKT_TIME = planDetail.TAKT_TIME;
+                                        tblWorkPlanDetail.PLAN_QUANTITY = planDetail.PLAN_QUANTITY;
+                                        tblWorkPlanDetail.HEAD_COUNT = planDetail.HEAD_COUNT;
+                                        tblWorkPlanDetail.DESCRIPTION = planDetail.DESCRIPTION;
+
+                                        List<MES_REPORT_LINE_DETAIL> lstReportDetails = line.ReportLineDetails.Where(x => x.WORK_PLAN_DETAIL_ID == planDetail.WORK_PLAN_DETAIL_ID).ToList();
+                                        if (lstReportDetails.Count > 0)
+                                        {
+                                            tblWorkPlanDetail.FINISH_AT = lstReportDetails.Max( x=>x.FINISH_AT);
+                                        }
+
+                                        _dbContext.Entry(tblWorkPlanDetail).State = System.Data.Entity.EntityState.Modified;
+                                    }
                                 }
                                 _Logger.Write(_LogCategory, $"Process Data: WorkPlan {line.WorkPlan.WORK_PLAN_ID} - WorkPlanDetail: {planDetail.WORK_PLAN_DETAIL_ID} - Status: {planDetail.STATUS}", LogType.Debug);
                             }
@@ -1601,6 +1654,7 @@ namespace iAndon.Biz.Logic
                                         detail.QUALITY_RATE = reportLineDetail.QUALITY_RATE;
                                         detail.OEE = reportLineDetail.OEE;
                                         detail.RESULT = reportLineDetail.RESULT;
+                                        detail.DETAIL_INDEX = reportLineDetail.DETAIL_INDEX;
                                         detail.STATUS = reportLineDetail.STATUS;
 
                                         _dbContext.Entry(detail).State = System.Data.Entity.EntityState.Modified;
@@ -1617,11 +1671,11 @@ namespace iAndon.Biz.Logic
                         #region SaveLineEvent
                         _Logger.Write(_LogCategory, $"Process Data: Save Event Line {line.LINE_ID} - Total: {line.LineEvents.Count}", LogType.Debug);
                         //Line Event
+                        //Lấy ListEvent đang có sẵn
+                        List<MES_LINE_EVENT> lstCurrentEvents = _dbContext.MES_LINE_EVENT.Where(x => x.LINE_ID == line.LINE_ID && x.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID).ToList();
+
                         foreach (MES_LINE_EVENT lineEvent in line.LineEvents)
                         {
-                            //tblLineEvent lineEvent = line.LineEvents.OrderBy(x => x.Start).Last(); //Bản tin sau chót
-                            //tblLineEvent tblLineEvent = _dbContext.tblLineEvents.FirstOrDefault(x => x.Finish.HasValue && x.LineId == line.Id);
-
                             //Kiểm tra theo ID
                             MES_LINE_EVENT tblLineEvent = _dbContext.MES_LINE_EVENT.FirstOrDefault(x => x.EVENT_ID == lineEvent.EVENT_ID);
                             //Kiểm tra theo LineId, WorkPlan và EventDefId
@@ -1636,6 +1690,11 @@ namespace iAndon.Biz.Logic
                                 //Đang trong quá trình thực thi
                                 //Thực thi
                                 DateTime _finish = eventTime;
+                                tblLineEvent.START = lineEvent.START;
+                                if (lineEvent.RESPONSE.HasValue)
+                                {
+                                    tblLineEvent.RESPONSE = lineEvent.RESPONSE;
+                                }
                                 if (lineEvent.FINISH.HasValue)
                                 {
                                     _finish = (DateTime)lineEvent.FINISH;
@@ -1657,7 +1716,13 @@ namespace iAndon.Biz.Logic
 
                                 //_Logger.Write(_LogCategory, $"Save event {tblLineEvent.Id} for Line {line.Id}", LogType.Debug);
                             }
+                            lstCurrentEvents.RemoveAll(x => x.EVENT_ID == lineEvent.EVENT_ID);
                         }
+                        //Xóa bỏ những thằng sót lại
+                        if (lstCurrentEvents.Count > 0)
+                        {
+                            _dbContext.MES_LINE_EVENT.RemoveRange(lstCurrentEvents);
+                        }    
 
                         //Node Event
                         foreach (Node node in line.Nodes)
@@ -2265,7 +2330,9 @@ namespace iAndon.Biz.Logic
                             _dbContext.MES_MSG_LINE_DETAIL.RemoveRange(msgLineDetails);
                         }
 
-                        foreach (MES_REPORT_LINE_DETAIL lineDetailWSS in line.ReportLineDetails)
+                        List<MES_REPORT_LINE_DETAIL> lstReportLineDetails = line.ReportLineDetails.Where(x=>x.STATUS != (int)PLAN_STATUS.Ready2Cancel).ToList();
+
+                        foreach (MES_REPORT_LINE_DETAIL lineDetailWSS in lstReportLineDetails)
                         {
                             MES_MSG_LINE_DETAIL msgLineDetail = new MES_MSG_LINE_DETAIL()
                             {
@@ -2576,6 +2643,10 @@ namespace iAndon.Biz.Logic
                         if (_start <= eventTime)
                         {
                             workPlanDetail.STATUS = (int)PLAN_STATUS.Proccessing;
+                        }
+                        else
+                        {
+                            workPlanDetail.STATUS = (int)PLAN_STATUS.NotStart;
                         }
                     }
                 }
@@ -2908,7 +2979,10 @@ namespace iAndon.Biz.Logic
         }
         private void ProcessWorkPlanDetails(string LineId, out DateTime WorkPlanStarted)
         {
-            WorkPlanStarted = DateTime.Now;
+            DateTime eventTime = DateTime.Now;
+            eventTime = eventTime.AddMilliseconds(0 - eventTime.Millisecond);
+            WorkPlanStarted = eventTime;
+
             try
             {
                 Line line = _Lines.FirstOrDefault(l => l.LINE_ID == LineId);
@@ -2936,6 +3010,9 @@ namespace iAndon.Biz.Logic
                     //line.ReportLine.PLAN_WORKING_DURATION = line.ReportLine.PLAN_TOTAL_DURATION - _planBreakDuration;
                     WorkPlanStarted = line.ReportLine.STARTED;
                 }
+
+                //Tính toán thời gian bắt đầu và Kết thúc cho ca chạy đó
+                UpdateBackLineEvent(line.LINE_ID, eventTime);
 
             }
             catch (Exception ex)
@@ -3020,6 +3097,9 @@ namespace iAndon.Biz.Logic
                     }
                 }
                 if (workPlanDetail.TAKT_TIME > 0) { _taktTime = (double)workPlanDetail.TAKT_TIME; }
+
+                //Fix trường hợp có tính START_AT
+                if (workPlanDetail.START_AT == 0) { workPlanDetail.START_AT = 1; }
 
                 decimal _planQuantity = workPlanDetail.PLAN_QUANTITY - workPlanDetail.START_AT + 1;
                 _Logger.Write(_LogCategory, $"Process Start Detail: Line {line.LINE_CODE} - WorkPlan {workPlan.WORK_PLAN_ID} - WorkPlanDetail: {workPlanDetail.WORK_PLAN_DETAIL_ID} - ProductId {workPlanDetail.PRODUCT_ID} - Total: {_planQuantity}", LogType.Debug);
@@ -3261,9 +3341,6 @@ namespace iAndon.Biz.Logic
                     }
                 }
 
-                //Tính toán thời gian bắt đầu và Kết thúc cho ca chạy đó
-                UpdateBackLineEvent(line.LINE_ID, eventTime);
-
             }
             catch (Exception ex)
             {
@@ -3284,22 +3361,36 @@ namespace iAndon.Biz.Logic
 
                 if (workPlanDetail == null) return;
 
+
                 _Logger.Write(_LogCategory, $"Remove Detail: Line [{line.LINE_ID}] - WorkPlanDetail: [{workPlanDetailId}] - Total: {line.ReportLineDetails.Count}", LogType.Debug);
 
                 //Loại bỏ những thằng thuộc WorkPlanDetail này
                 List<MES_REPORT_LINE_DETAIL> removedList = line.ReportLineDetails.Where(x => x.WORK_PLAN_DETAIL_ID == workPlanDetailId).ToList();
-
-                foreach (MES_REPORT_LINE_DETAIL reportLineDetail in line.ReportLineDetails)
+                
+                int _planIndex = 0;
+                foreach (MES_REPORT_LINE_DETAIL removed in removedList)
                 {
-                    if (reportLineDetail.WORK_PLAN_DETAIL_ID != workPlanDetail.WORK_PLAN_DETAIL_ID) continue;
-
-                    _Logger.Write(_LogCategory, $"Set Detail to Cancel: Line {line.LINE_CODE} - ReportLineDetail: {reportLineDetail.WORK_PLAN_DETAIL_ID} - Time: {reportLineDetail.TIME_NAME}", LogType.Debug);
-
-                    reportLineDetail.STATUS = (int)PLAN_STATUS.Ready2Cancel; //Đặt đây để xóa đi
+                    _Logger.Write(_LogCategory, $"Set Detail to Cancel: Line {line.LINE_CODE} - ReportLineDetail: {removed.WORK_PLAN_DETAIL_ID} - Time: {removed.TIME_NAME}", LogType.Debug);
+                    removed.STATUS = (int)PLAN_STATUS.Ready2Cancel; //Đặt đây để xóa đi
+                    _planIndex = removed.DETAIL_INDEX;
                 }
 
-                //Tính toán thời gian bắt đầu và kết thúc cho thằng ReportLine 
-                UpdateBackLineEvent(line.LINE_ID, eventTime);
+                if (_planIndex > 0)
+                {
+                    foreach (MES_REPORT_LINE_DETAIL reportLineDetail in line.ReportLineDetails)
+                    {
+                        if (reportLineDetail.WORK_PLAN_DETAIL_ID == workPlanDetail.WORK_PLAN_DETAIL_ID) continue;
+
+                        if (reportLineDetail.DETAIL_INDEX > _planIndex)
+                        {
+                            reportLineDetail.DETAIL_INDEX -= 1;
+                            //Giảm index để lần sau them vào thì nối vào luôn
+                        }
+                    }
+                }
+
+                ////Tính toán thời gian bắt đầu và kết thúc cho thằng ReportLine 
+                //UpdateBackLineEvent(line.LINE_ID, eventTime);
 
             }
             catch (Exception ex)
@@ -3308,6 +3399,22 @@ namespace iAndon.Biz.Logic
             }
         }
 
+        private MES_WORK_PLAN_DETAIL SearchWorkPlanDetailById(string workPlanDetailId)
+        {
+            MES_WORK_PLAN_DETAIL ret = null;
+
+            foreach(WorkPlan workPlan in _WorkPlans)
+            {
+                foreach(MES_WORK_PLAN_DETAIL detail in workPlan.WorkPlanDetails)
+                {
+                    if (detail.WORK_PLAN_DETAIL_ID == workPlanDetailId)
+                    {
+                        return detail;
+                    }
+                }
+            }
+            return ret;
+        }
         private List<MES_REPORT_LINE_DETAIL> RemoveWorkPlan(string LineId, string workPlanId)
         {
             try
@@ -3784,25 +3891,22 @@ namespace iAndon.Biz.Logic
                 //Loại bỏ phần sau GIÂY
                 eventTime = eventTime.AddMilliseconds(0 - eventTime.Millisecond);
 
-                //Khởi tạo Event ban đầu
+                ////Khởi tạo Event ban đầu
+                //////Chỗ này fix tạm để xử lý
+                //DateTime actualStartPlan = _start;
+                //string _EventDefId = Consts.EVENTDEF_NOPLAN;
 
+                //if (line.ReportLine != null)
+                //{
+                //    actualStartPlan = line.ReportLine.PLAN_START;
+                //    //Khớp nhau thì Running
+                //    if (actualStartPlan == _start)
+                //    {
+                //        _EventDefId = Consts.EVENTDEF_RUNNING;
+                //    }
+                //}
 
-                ////Chỗ này fix tạm để xử lý
-                DateTime actualStartPlan = _start;
-                string _EventDefId = Consts.EVENTDEF_NOPLAN;
-
-                if (line.ReportLine != null)
-                {
-                    actualStartPlan = line.ReportLine.PLAN_START;
-                    //Khớp nhau thì Running
-                    if (actualStartPlan == _start)
-                    {
-                        _EventDefId = Consts.EVENTDEF_RUNNING;
-                    }
-                }
-
-                ChangeLineEvent(line.LINE_ID, _start, _EventDefId);
-         
+                //ChangeLineEvent(line.LINE_ID, _start, _EventDefId);
 
                 //Line Working
                 if (line.LineWorkings == null)
@@ -3890,6 +3994,17 @@ namespace iAndon.Biz.Logic
 
                 List<MES_REPORT_LINE_DETAIL> lstReportLineDetails = line.ReportLineDetails.Where(x => x.STATUS != (int)PLAN_STATUS.Ready2Cancel).ToList();
 
+                if (lstReportLineDetails.Count == 0)
+                {
+                    //Nếu không còn thằng nào nữa
+                    //Xóa report-line
+                    reportLine.STATUS = (int)PLAN_STATUS.Ready2Cancel;
+                    //Xóa event
+                    line.LineEvents.Clear();
+                    ChangeLineEvent(LineId, workPlan.PlanStart, Consts.EVENTDEF_NOPLAN);
+                    return;
+                }
+
                 //Update thằng ReportLine
                 if (lstReportLineDetails.Count > 0)
                 {
@@ -3913,12 +4028,13 @@ namespace iAndon.Biz.Logic
 
                     _Logger.Write(_LogCategory, $"Update ReportLine: Line [{line.LINE_ID}] - Start [{line.ReportLine.PLAN_START}] - Finish [{line.ReportLine.PLAN_FINISH}]", LogType.Debug);
                 }
-
+            
                 //Bắt đầu xử lý phần sự kiện
                 DM_MES_EVENTDEF _running = _EventDefs.FirstOrDefault(x => x.EVENTDEF_ID == Consts.EVENTDEF_RUNNING);
                 DM_MES_EVENTDEF _noplan = _EventDefs.FirstOrDefault(x => x.EVENTDEF_ID == Consts.EVENTDEF_NOPLAN);
                 //actualStartPlan là thời gian thực tế chạy
-                DateTime actualStartPlan = line.ReportLine.STARTED;
+                DateTime reportLineStartPlan = line.ReportLine.PLAN_START;
+                DateTime reportLineFinishPlan = line.ReportLine.PLAN_FINISH;
 
                 if (line.LineEvents.Count > 0)
                 {
@@ -3929,12 +4045,18 @@ namespace iAndon.Biz.Logic
                     ///Nếu ông nào mà vắt ngang ra: bổ ra thành 2 cái: 1 thành NOPLAN -> 1 thành RUNNING
 
                     List<MES_LINE_EVENT> lstEvents = line.LineEvents;
-                    //Lấy các event bắt đầu trước thời điểm cập nhật
-                    //Nếu kết thúc trước đó ==> Update thành NOPLAN
-                    //Cái cuối cùng thì bổ ra thành 2 cái: 1 thành NOPLAN -> 1 thành RUNNING
+           
                     foreach (MES_LINE_EVENT lstEvent in lstEvents)
                     {
-                        if (lstEvent.FINISH <= actualStartPlan)
+                        //A. Bước 1 - XỬ LÝ ĐOẠN ĐẦU
+                        //Lấy các event bắt đầu trước thời điểm cập nhật
+                        //Nếu kết thúc trước đó ==> Update thành NOPLAN
+                        //Cái cuối cùng thì bổ ra thành 2 cái: 1 thành NOPLAN -> 1 thành RUNNING
+
+                        DateTime _finish = eventTime;
+                        if (lstEvent.FINISH.HasValue) _finish = (DateTime)lstEvent.FINISH;
+
+                        if (_finish <= reportLineStartPlan)
                         {
                             _Logger.Write(_LogCategory, $"Change Event {lstEvent.EVENT_ID} FROM {lstEvent.EVENTDEF_ID} to NoPlan at Line {LineId}", LogType.Debug);
                             //Cập nhật thành NOPLAN những thằng trước khi bắt đầu thực tế
@@ -3945,20 +4067,20 @@ namespace iAndon.Biz.Logic
                         }
                         else
                         {
-                            if (lstEvent.START <= actualStartPlan)
+                            if (lstEvent.START < reportLineStartPlan)
                             {
                                 //Tách ra 2 cái: 1 cái NoPlan từ Start đến actualStartPlan, 1 cái là Running từ actualStartPlan
 
                                 //Thêm thằng mới là thằng NoPlan từ bắt đầu Start của nó đến thời điểm actualStartPlan
 
                                 string _detailId = "", _productId = "", _productCode = "", _productName = "";
-                                long _duration = (long)(actualStartPlan - lstEvent.START).TotalSeconds;
+                                long _duration = (long)(reportLineStartPlan - lstEvent.START).TotalSeconds;
                                 if (_duration > 0)
                                 {
                                     foreach (MES_REPORT_LINE_DETAIL detail in lstReportLineDetails)
                                     {
                                         //Nếu nó chạy trong khoảng đó
-                                        if (detail.STARTED <= actualStartPlan && detail.FINISHED > actualStartPlan)
+                                        if (detail.STARTED <= reportLineStartPlan && detail.FINISHED > reportLineStartPlan)
                                         {
                                             _detailId += detail.REPORT_LINE_DETAIL_ID + ",";
                                             _productId += detail.PRODUCT_ID + ",";
@@ -3968,38 +4090,92 @@ namespace iAndon.Biz.Logic
                                     }
                                     //Tạo thằng NO-PLAN mới
                                     MES_LINE_EVENT lineEvent = CreateLineEvent(line, _noplan, lstEvent.START, _detailId, _productId, _productCode, _productName);
-                                    lineEvent.FINISH = actualStartPlan;
+                                    lineEvent.FINISH = reportLineStartPlan;
                                     lineEvent.TOTAL_DURATION = _duration;
 
                                     line.LineEvents.Add(lineEvent);
-                                    _Logger.Write(_LogCategory, $"Add NoPlan Event Start [{lstEvent.START:HH:mm:ss}] - Finish [{actualStartPlan:HH:mm:ss}]  at Line {LineId}", LogType.Debug);
+                                    _Logger.Write(_LogCategory, $"Add NoPlan Event Start [{lstEvent.START:HH:mm:ss}] - Finish [{reportLineStartPlan:HH:mm:ss}]  at Line {LineId}", LogType.Debug);
 
                                     //Cập nhật thằng Running cũ cho bắt đầu tại thời điểm actualStartPlan
                                     lstEvent.EVENTDEF_ID = _running.EVENTDEF_ID;
                                     lstEvent.EVENTDEF_NAME_EN = _running.EVENTDEF_NAME_EN;
                                     lstEvent.EVENTDEF_NAME_VN = _running.EVENTDEF_NAME_VN;
                                     lstEvent.EVENTDEF_COLOR = _running.EVENTDEF_COLOR;
-                                    lstEvent.START = actualStartPlan;
-                                    _Logger.Write(_LogCategory, $"Change Event {lstEvent.EVENT_ID} FROM {lstEvent.EVENTDEF_ID} to Running: Start [{actualStartPlan:HH:mm:ss}] at Line {LineId}", LogType.Debug);
+                                    lstEvent.START = reportLineStartPlan;
+                                    _Logger.Write(_LogCategory, $"Change Event {lstEvent.EVENT_ID} FROM {lstEvent.EVENTDEF_ID} to Running: Start [{reportLineStartPlan:HH:mm:ss}] at Line {LineId}", LogType.Debug);
 
                                 }
                             }
-                            //else
-                            //{
-                            //    //Những thằng còn lại
-                            //    //Chỉ xét nếu = NO-PLAN 
-                            //    //Chưa xảy ra thì chỉ đổi lại thằng ban đầu thành NoPlan mà thôi
-                            //    lstEvent.EVENTDEF_ID = _noplan.EVENTDEF_ID;
-                            //    lstEvent.EVENTDEF_NAME_EN = _noplan.EVENTDEF_NAME_EN;
-                            //    lstEvent.EVENTDEF_NAME_VN = _noplan.EVENTDEF_NAME_VN;
-                            //    lstEvent.EVENTDEF_COLOR = _noplan.EVENTDEF_COLOR;
+                            else
+                            {
+                                //Sau thời gian chạy rồi, nếu ông mà NOPLAN thì tôi đảo cho chạy
+                                if (lstEvent.EVENTDEF_ID == Consts.EVENTDEF_NOPLAN)
+                                {
+                                    lstEvent.EVENTDEF_ID = _running.EVENTDEF_ID;
+                                    lstEvent.EVENTDEF_NAME_EN = _running.EVENTDEF_NAME_EN;
+                                    lstEvent.EVENTDEF_NAME_VN = _running.EVENTDEF_NAME_VN;
+                                    lstEvent.EVENTDEF_COLOR = _running.EVENTDEF_COLOR;
+                                }
 
-                            //}
+                            }
                         }
+
+
+
+                        //B - ĐOẠN SAU: KỆ NÓ CHẠY = PHẦN KIỂM TRA THÔI
+
+                        if (lstEvent.START >= reportLineFinishPlan)
+                        {
+                            //Đã sau khi kết thúc --> Đổi thành NOPLAN
+                            _Logger.Write(_LogCategory, $"Change Event {lstEvent.EVENT_ID} FROM {lstEvent.EVENTDEF_ID} to NoPlan at Line {LineId}", LogType.Debug);
+                            lstEvent.EVENTDEF_ID = _noplan.EVENTDEF_ID;
+                            lstEvent.EVENTDEF_NAME_EN = _noplan.EVENTDEF_NAME_EN;
+                            lstEvent.EVENTDEF_NAME_VN = _noplan.EVENTDEF_NAME_VN;
+                            lstEvent.EVENTDEF_COLOR = _noplan.EVENTDEF_COLOR;
+                        }
+                        else
+                        {
+                            if (_finish > reportLineFinishPlan)
+                            {
+                                //Tách ra 2 cái: 1 cái NoPlan từ Start đến actualStartPlan, 1 cái là Running từ actualStartPlan
+
+                                //Thêm thằng mới là thằng NoPlan từ bắt đầu Start của nó đến thời điểm actualStartPlan
+
+                                //string _detailId = "", _productId = "", _productCode = "", _productName = "";
+                                decimal _duration = (decimal)(_finish - reportLineFinishPlan).TotalSeconds;
+                                if (_duration > 0)
+                                {
+                                    //foreach (MES_REPORT_LINE_DETAIL detail in lstReportLineDetails)
+                                    //{
+                                    //    //Nếu nó chạy trong khoảng đó
+                                    //    if (detail.STARTED <= reportLineStartPlan && detail.FINISHED > reportLineStartPlan)
+                                    //    {
+                                    //        _detailId += detail.REPORT_LINE_DETAIL_ID + ",";
+                                    //        _productId += detail.PRODUCT_ID + ",";
+                                    //        _productCode += detail.PRODUCT_CODE + ",";
+                                    //        _productName += detail.PRODUCT_NAME + ",";
+                                    //    }
+                                    //}
+                                    //Cập nhật thằng kết thúc tại thời điểm reportLineFinishPlan
+                                    lstEvent.FINISH = reportLineFinishPlan;
+                                    _Logger.Write(_LogCategory, $"Update Event {lstEvent.EVENT_ID}: Change stop to [{reportLineFinishPlan:HH:mm:ss}] at Line {LineId}", LogType.Debug);
+
+                                    //Tạo thằng NO-PLAN mới từ đoạn Finish đến cuối
+                                    ChangeLineEvent(line.LINE_ID, reportLineFinishPlan, Consts.EVENTDEF_NOPLAN);
+                                    //if (lstEvent.FINISH.HasValue)
+                                    //{
+                                    //    _duration = (decimal)((DateTime)lstEvent.FINISH - reportLineFinishPlan).TotalSeconds;
+
+                                    //    lineEvent.FINISH = lstEvent.FINISH;
+                                    //    lineEvent.TOTAL_DURATION = _duration;
+                                    //}
+                                    //line.LineEvents.Add(lineEvent);
+                                    _Logger.Write(_LogCategory, $"Add Last NoPlan Event Start [{reportLineFinishPlan:HH:mm:ss}]  at Line {LineId}", LogType.Debug);
+                                }
+                            }
+                        }    
                     }
-
-                    //B - ĐOẠN SAU: KỆ NÓ CHẠY = PHẦN KIỂM TRA THÔI
-
+         
                     //C - CUỐI CÙNG: Sắp xếp lại phát
                     line.LineEvents = line.LineEvents.OrderBy(x => x.START).ToList();
 
@@ -4023,18 +4199,18 @@ namespace iAndon.Biz.Logic
                     string _detailId = "", _productId = "", _productCode = "", _productName = "";
 
                     string _eventDef = Consts.EVENTDEF_RUNNING;
-                    if (actualStartPlan > workPlan.PlanStart)
+                    if (reportLineStartPlan > workPlan.PlanStart)
                     {
                         _eventDef = Consts.EVENTDEF_NOPLAN;
                     }
                     //Chạy sau khi bắt đầu ca thì thêm NOPLAN vào đoạn đầu
                     ChangeLineEvent(LineId, workPlan.PlanStart, _eventDef);
 
-                    if (actualStartPlan > workPlan.PlanStart)
+                    if (reportLineStartPlan > workPlan.PlanStart)
                     {
-                        if ((eventTime > actualStartPlan) && line.EventDefId == Consts.EVENTDEF_NOPLAN)
+                        if ((eventTime > reportLineStartPlan) && line.EventDefId == Consts.EVENTDEF_NOPLAN)
                             //Chạy sau khi bắt đầu ca thì thêm NOPLAN vào đoạn đầu
-                            ChangeLineEvent(LineId, workPlan.PlanStart, Consts.EVENTDEF_RUNNING);
+                            ChangeLineEvent(LineId, reportLineStartPlan, Consts.EVENTDEF_RUNNING);
                     }
                 }
             }
@@ -4243,20 +4419,9 @@ namespace iAndon.Biz.Logic
                         _dbContext.Entry(msgLine).State = System.Data.Entity.EntityState.Modified;
                     }
 
+
                     List<MES_MSG_LINE_WORKING> msgLineWorkings = _dbContext.MES_MSG_LINE_WORKING.Where(x => x.LINE_ID == LineId).ToList();
-                    foreach(MES_MSG_LINE_WORKING msgLineWorking in msgLineWorkings)
-                    {
-                        msgLineWorking.DURATION = 0;
-                        _dbContext.Entry(msgLineWorking).State = System.Data.Entity.EntityState.Modified;
-                    }
-
-                    List<MES_MSG_LINE_STOP> msgLineStops = _dbContext.MES_MSG_LINE_STOP.Where(x => x.LINE_ID == LineId).ToList();
-                    foreach (MES_MSG_LINE_STOP msgLineStop in msgLineStops)
-                    {
-                        msgLineStop.DURATION = 0;
-                        _dbContext.Entry(msgLineStop).State = System.Data.Entity.EntityState.Modified;
-                    }
-
+                    _dbContext.MES_MSG_LINE_WORKING.RemoveRange(msgLineWorkings);
                     List<MES_MSG_LINE_EVENT> msgLineEvents = _dbContext.MES_MSG_LINE_EVENT.Where(x => x.LINE_ID == LineId).ToList();
                     _dbContext.MES_MSG_LINE_EVENT.RemoveRange(msgLineEvents);
                     List<MES_MSG_LINE_DETAIL> msgLineDetails = _dbContext.MES_MSG_LINE_DETAIL.Where(x => x.LINE_ID == LineId).ToList();
