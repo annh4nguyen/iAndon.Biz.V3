@@ -67,7 +67,8 @@ namespace iAndon.Biz.Logic
         private bool _UseProductConfig = (int.Parse(ConfigurationManager.AppSettings["use_product_config"]) == 1);
         private bool _UseResponeTime = (int.Parse(ConfigurationManager.AppSettings["use_response_event"]) == 1);
         private bool _AddEventUntilFinish = (int.Parse(ConfigurationManager.AppSettings["add_event_until_finish"]) == 1);
-        
+        private bool _IsPerformanceByDetail = (int.Parse(ConfigurationManager.AppSettings["performance_by_detail"]) == 1);
+
         private static int _AutoSwitchWorkPlanInterval = int.Parse(ConfigurationManager.AppSettings["auto_switch_workplan_interval"]);
         
 
@@ -957,14 +958,6 @@ namespace iAndon.Biz.Logic
                         DateTime eventTime = DateTime.Now;
                         eventTime = eventTime.AddMilliseconds(0 - eventTime.Millisecond);
 
-                        #region ReportLineDetail
-                        List<MES_LOG_LAST_UPDATE> updateReportDetails = lastUpdates.Where(x => x.OBJECT_TYPE == "REPORTLINEDETAIL").ToList();
-                     
-                        //Cập nhật sản lượng nhập vào
-                        ReloadReportDetail();
-
-                        #endregion
-
                         #region WorkPlan
 
                         List<MES_LOG_LAST_UPDATE> updateWorkPlans = lastUpdates.Where(x => x.OBJECT_TYPE == "WORKPLAN").ToList();
@@ -1199,6 +1192,13 @@ namespace iAndon.Biz.Logic
                     ReloadProducts();
 
                 }
+
+                #region ReportLineDetail
+                //Cập nhật sản lượng nhập vào
+                ReloadReportDetail();
+
+                #endregion
+
                 //Reload dữ liệu mới nhập
                 ReloadUpdateConfig();
 
@@ -2105,15 +2105,6 @@ namespace iAndon.Biz.Logic
                                 }
                             }
                         }
-
-                        decimal _actualStopDuration = 0;
-                        int _numberOfStop = 0;
-                        if (line.ReportLine != null)
-                        {
-                            _actualStopDuration = line.ReportLine.ACTUAL_STOP_DURATION;
-                            _numberOfStop = line.ReportLine.NUMBER_OF_STOP;
-                        }
-
                         //Tính thời gian dịch chuyển
                         if (line.WorkPlan != null)
                         {
@@ -2132,6 +2123,54 @@ namespace iAndon.Biz.Logic
                         {
                             line.CurrentDetail = 0;
                         }
+                        decimal _totalStopDuration = 0;
+                        int _numberOfStop = 0;
+                        if (line.ReportLine != null)
+                        {
+                            _totalStopDuration = line.ReportLine.ACTUAL_STOP_DURATION;
+                            _numberOfStop = line.ReportLine.NUMBER_OF_STOP;
+                        }
+
+                        int _runningHeadCount = 0;
+                        decimal _runningTaktTime = 0, _totalPlanQuantity = 0, _planQuantity = 0, _targetQuantity = 0, _actualQuantity = 0, _ngQuantity = 0, _stopDuration = 0;
+                        decimal _planRate = 0, _targetRate = 0, _timeRate = 0, _qualityRate = 0, _oee = 0;
+                        if (_IsPerformanceByDetail)
+                        {
+                            _runningHeadCount = detail.RUNNING_HEAD_COUNT;
+                            _runningTaktTime = detail.RUNNING_TAKT_TIME;
+                            _totalPlanQuantity = detail.TOTAL_PLAN_QUANTITY;
+                            _planQuantity = detail.PLAN_QUANTITY;
+                            _targetQuantity = detail.TARGET_QUANTITY;
+                            _actualQuantity = detail.ACTUAL_QUANTITY;
+                            _ngQuantity = detail.ACTUAL_NG_QUANTITY;
+                            _stopDuration = detail.STOP_DURATION;
+                            _planRate = detail.PLAN_RATE;
+                            _targetRate = detail.TARGET_RATE;
+                            _timeRate = detail.TIME_RATE;
+                            _qualityRate = detail.QUALITY_RATE;
+                            _oee = detail.OEE;
+                        }
+                        else
+                        {
+                            if (line.ReportLine != null)
+                            {
+                                _runningHeadCount = 0;
+                                _runningTaktTime = line.ReportLine.PLAN_TAKT_TIME;
+                                _totalPlanQuantity = line.ReportLine.PLAN_QUANTITY;
+                                _planQuantity = line.ReportLine.PLAN_QUANTITY;
+                                _targetQuantity = line.ReportLine.TARGET_QUANTITY;
+                                _actualQuantity = line.ReportLine.ACTUAL_QUANTITY;
+                                _ngQuantity = line.ReportLine.ACTUAL_NG_QUANTITY;
+                                _stopDuration = line.ReportLine.ACTUAL_STOP_DURATION;
+                                _planRate = line.ReportLine.PLAN_RATE;
+                                _targetRate = line.ReportLine.TARGET_RATE;
+                                _timeRate = line.ReportLine.TIME_RATE;
+                                _qualityRate = line.ReportLine.QUALITY_RATE;
+                                _oee = line.ReportLine.OEE;
+                            }
+                        }
+
+
 
                         MES_MSG_LINE msgLine = _dbContext.MES_MSG_LINE.FirstOrDefault(l => l.LINE_ID == line.LINE_ID);
                         if (msgLine == null)
@@ -2159,21 +2198,23 @@ namespace iAndon.Biz.Logic
                                 PRODUCT_CATEGORY_ID = _productCategoryId,
                                 PRODUCT_CATEGORY_CODE = _productCategoryCode,
                                 PRODUCT_CATEGORY_NAME = _productCategoryName,
-                                HEAD_COUNT = detail.RUNNING_HEAD_COUNT,
-                                TAKT_TIME = detail.RUNNING_TAKT_TIME,
-                                TOTAL_PLAN_QUANTITY = detail.TOTAL_PLAN_QUANTITY,
-                                PLAN_QUANTITY = detail.PLAN_QUANTITY,
-                                TARGET_QUANTITY = detail.TARGET_QUANTITY,
-                                ACTUAL_QUANTITY = detail.ACTUAL_QUANTITY,
-                                ACTUAL_NG_QUANTITY = detail.ACTUAL_NG_QUANTITY,
-                                STOP_DURATION = detail.STOP_DURATION,
-                                TOTAL_STOP_DURATION = _actualStopDuration,
+
+                                HEAD_COUNT = _runningHeadCount,
+                                TAKT_TIME = _runningTaktTime,
+                                TOTAL_PLAN_QUANTITY = _totalPlanQuantity,
+                                PLAN_QUANTITY = _planQuantity,
+                                TARGET_QUANTITY = _targetQuantity,
+                                ACTUAL_QUANTITY = _actualQuantity,
+                                ACTUAL_NG_QUANTITY = _ngQuantity,
+                                STOP_DURATION = _stopDuration,
+                                TOTAL_STOP_DURATION = _totalStopDuration,
                                 NUMBER_OF_STOP = _numberOfStop,
-                                PLAN_RATE = detail.PLAN_RATE,
-                                TARGET_RATE = detail.TARGET_RATE,
-                                TIME_RATE = detail.TIME_RATE,
-                                QUALITY_RATE = detail.QUALITY_RATE,
-                                OEE = detail.OEE,
+                                PLAN_RATE = _planRate,
+                                TARGET_RATE = _targetRate,
+                                TIME_RATE = _timeRate,
+                                QUALITY_RATE = _qualityRate,
+                                OEE = _oee,
+
                                 CURRENT_DETAIL = line.CurrentDetail,
                                 TIME_UPDATED = eventTime,
                             };
@@ -2181,7 +2222,6 @@ namespace iAndon.Biz.Logic
                         }
                         else
                         {
-
                             msgLine.EVENTDEF_ID = line.EventDefId;
                             msgLine.EVENTDEF_NAME_VN = line.EventDefName_VN;
                             msgLine.EVENTDEF_NAME_EN = line.EventDefName_EN;
@@ -2192,21 +2232,22 @@ namespace iAndon.Biz.Logic
                             msgLine.PRODUCT_CATEGORY_ID = _productCategoryId;
                             msgLine.PRODUCT_CATEGORY_CODE = _productCategoryCode;
                             msgLine.PRODUCT_CATEGORY_NAME = _productCategoryName;
-                            msgLine.HEAD_COUNT = detail.RUNNING_HEAD_COUNT;
-                            msgLine.TAKT_TIME = detail.RUNNING_TAKT_TIME;
-                            msgLine.TOTAL_PLAN_QUANTITY = detail.TOTAL_PLAN_QUANTITY;
-                            msgLine.PLAN_QUANTITY = detail.PLAN_QUANTITY;
-                            msgLine.TARGET_QUANTITY = detail.TARGET_QUANTITY;
-                            msgLine.ACTUAL_QUANTITY = detail.ACTUAL_QUANTITY;
-                            msgLine.ACTUAL_NG_QUANTITY = detail.ACTUAL_NG_QUANTITY;
-                            msgLine.STOP_DURATION = detail.STOP_DURATION;
-                            msgLine.TOTAL_STOP_DURATION = _actualStopDuration;
+
+                            msgLine.HEAD_COUNT = _runningHeadCount;
+                            msgLine.TAKT_TIME = _runningTaktTime;
+                            msgLine.TOTAL_PLAN_QUANTITY = _totalPlanQuantity;
+                            msgLine.PLAN_QUANTITY = _planQuantity;
+                            msgLine.TARGET_QUANTITY = _targetQuantity;
+                            msgLine.ACTUAL_QUANTITY = _actualQuantity;
+                            msgLine.ACTUAL_NG_QUANTITY = _ngQuantity;
+                            msgLine.STOP_DURATION = _stopDuration;
+                            msgLine.TOTAL_STOP_DURATION = _totalStopDuration;
                             msgLine.NUMBER_OF_STOP = _numberOfStop;
-                            msgLine.PLAN_RATE = detail.PLAN_RATE;
-                            msgLine.TARGET_RATE = detail.TARGET_RATE;
-                            msgLine.TIME_RATE = detail.TIME_RATE;
-                            msgLine.QUALITY_RATE = detail.QUALITY_RATE;
-                            msgLine.OEE = detail.OEE;
+                            msgLine.PLAN_RATE = _planRate;
+                            msgLine.TARGET_RATE = _targetRate;
+                            msgLine.TIME_RATE = _timeRate;
+                            msgLine.QUALITY_RATE = _qualityRate;
+                            msgLine.OEE = _oee;
                             msgLine.CURRENT_DETAIL = line.CurrentDetail;
                             msgLine.TIME_UPDATED = eventTime;
                             _dbContext.Entry(msgLine).State = System.Data.Entity.EntityState.Modified;
@@ -2372,7 +2413,8 @@ namespace iAndon.Biz.Logic
                         {
                             _dbContext.MES_MSG_LINE_PRODUCT.RemoveRange(msgLineProducts);
                         }
-                        List<MES_REPORT_LINE_DETAIL> reportDetails = new List<MES_REPORT_LINE_DETAIL>(line.ReportLineDetails);
+                        List<MES_REPORT_LINE_DETAIL> reportDetails = line.ReportLineDetails.Where(x=>x.STATUS != (int)PLAN_STATUS.Ready2Cancel).ToList();
+
                         while (reportDetails.Count > 0)
                         {
                             MES_REPORT_LINE_DETAIL item = reportDetails.FirstOrDefault();
@@ -2889,18 +2931,19 @@ namespace iAndon.Biz.Logic
                             }
 
                             //Tính PlanRate theo kết quả hiện tại
-                            decimal _planQuantity = reportLine.PLAN_QUANTITY;
-                            decimal _actualQuantity = reportLine.ACTUAL_QUANTITY;
-                            List<MES_REPORT_LINE_DETAIL> lineDetails = line.ReportLineDetails.Where(x => x.STATUS >= (int)PLAN_STATUS.NotStart).ToList();
-                            if (lineDetails.Count > 0)
-                            {
-                                _planQuantity = lineDetails.Sum(x => x.PLAN_QUANTITY);
-                                _actualQuantity = lineDetails.Sum(x => x.PLAN_QUANTITY);
-                            }
+                            //decimal _planQuantity = reportLine.PLAN_QUANTITY;
+                            //decimal _actualQuantity = reportLine.ACTUAL_QUANTITY;
+                            //List<MES_REPORT_LINE_DETAIL> lineDetails = line.ReportLineDetails.Where(x => x.STATUS >= (int)PLAN_STATUS.NotStart).ToList();
+                            //if (lineDetails.Count > 0)
+                            //{
+                            //    _planQuantity = lineDetails.Sum(x => x.PLAN_QUANTITY);
+                            //    _actualQuantity = lineDetails.Sum(x => x.PLAN_QUANTITY);
+                            //}
+
                             reportLine.PLAN_RATE = 0;
-                            if (_planQuantity != 0)
+                            if (reportLine.PLAN_QUANTITY != 0)
                             {
-                                reportLine.PLAN_RATE = Math.Round(100 * _actualQuantity / _planQuantity, 1);
+                                reportLine.PLAN_RATE = Math.Round(100 * reportLine.ACTUAL_QUANTITY / reportLine.PLAN_QUANTITY, 1);
                             }
                             reportLine.TARGET_RATE = 0;
                             if (reportLine.TARGET_QUANTITY != 0)
@@ -3607,7 +3650,6 @@ namespace iAndon.Biz.Logic
                 if (line.LineEvents.Count > 0)
                 {
                     oldEvent = line.LineEvents.Last(x => !x.FINISH.HasValue);
-
                 }
                 else
                 {
@@ -4157,8 +4199,8 @@ namespace iAndon.Biz.Logic
                                     //    }
                                     //}
                                     //Cập nhật thằng kết thúc tại thời điểm reportLineFinishPlan
-                                    lstEvent.FINISH = reportLineFinishPlan;
-                                    _Logger.Write(_LogCategory, $"Update Event {lstEvent.EVENT_ID}: Change stop to [{reportLineFinishPlan:HH:mm:ss}] at Line {LineId}", LogType.Debug);
+                                    //lstEvent.FINISH = reportLineFinishPlan;
+                                    //_Logger.Write(_LogCategory, $"Update Event {lstEvent.EVENT_ID}: Change stop to [{reportLineFinishPlan:HH:mm:ss}] at Line {LineId}", LogType.Debug);
 
                                     //Tạo thằng NO-PLAN mới từ đoạn Finish đến cuối
                                     ChangeLineEvent(line.LINE_ID, reportLineFinishPlan, Consts.EVENTDEF_NOPLAN);
@@ -4323,25 +4365,33 @@ namespace iAndon.Biz.Logic
                 using (Entities _dbContext = new Entities())
                 {
                     MES_REPORT_LINE reportLine = _dbContext.MES_REPORT_LINE.FirstOrDefault(x => x.WORK_PLAN_ID == WorkPlanId);
-                    List<MES_REPORT_LINE_DETAIL> reportLineDetails = _dbContext.MES_REPORT_LINE_DETAIL.Where(x => x.WORK_PLAN_ID == WorkPlanId).ToList();
                     //Tồn tại - Tức là đang chạy dở dang rồi thì đã có tính toán rồi, Load lại
                     if (reportLine != null)
                     {
                         _Logger.Write(_LogCategory, $"Running Start at Line {LineId} - WorkPlan {workPlan.WORK_PLAN_ID} - WorkPlanDetail: {line.WorkPlan.WorkPlanDetails.Count} ", LogType.Debug);
 
-                        line.ReportLine = reportLine;
-                        if (reportLineDetails.Count > 0)
-                        {
-                            foreach (MES_REPORT_LINE_DETAIL reportLineDetail in reportLineDetails)
-                            {
-                                //reportLineDetail.Status = (int)PlanStatus.Proccessing;
-                                line.ReportLineDetails.Add(reportLineDetail);
-                            }
-                        }
-  
                         //Build TimeData cho nó nữa
                         BuildTimeData(LineId);
 
+                        line.ReportLine = reportLine;
+                        //Detail
+                        line.ReportLineDetails = _dbContext.MES_REPORT_LINE_DETAIL.Where(x => x.WORK_PLAN_ID == WorkPlanId).ToList();
+                        //Event
+                        line.LineEvents = _dbContext.MES_LINE_EVENT.Where(x => x.WORK_PLAN_ID == WorkPlanId).ToList();
+
+                        string _eventDefId = Consts.EVENTDEF_NOPLAN;
+                        if (line.LineEvents.Count > 0)
+                        {
+                            MES_LINE_EVENT lastEvent = line.LineEvents.FirstOrDefault(x => !x.FINISH.HasValue);
+                            if (lastEvent != null) _eventDefId = lastEvent.EVENTDEF_ID;
+                        }
+                        DM_MES_EVENTDEF tblEventDef = _EventDefs.FirstOrDefault(x => x.EVENTDEF_ID == _eventDefId);
+                        
+                        line.LastEventDefId = tblEventDef.EVENTDEF_ID;
+                        line.EventDefId = tblEventDef.EVENTDEF_ID;
+                        line.EventDefName_EN = tblEventDef.EVENTDEF_NAME_EN;
+                        line.EventDefName_VN = tblEventDef.EVENTDEF_NAME_VN;
+                        line.EventDefColor = tblEventDef.EVENTDEF_COLOR;
                     }
                     else
                     {
@@ -5081,8 +5131,7 @@ namespace iAndon.Biz.Logic
                             DateTime pushTime = eventRawPush.START_TIME;
                             if (pushTime > eventTime) continue;
                             //Chỉ lấy trong 30s gần nhất
-                            if ((eventTime - pushTime).TotalSeconds > Consts.VERIFY_EVENT) continue;
-
+                            if ((eventTime - pushTime).TotalSeconds < Consts.VERIFY_EVENT) continue;
 
                             Line line = _Lines.FirstOrDefault(l => l.LINE_ID == eventRawPush.LINE_ID);
 
