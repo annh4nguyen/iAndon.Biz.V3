@@ -19,6 +19,7 @@
           <Property Name="COMMENTS" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="ACTIVE" Type="smallint" Nullable="false" />
           <Property Name="USER_ID" Type="nvarchar" MaxLength="20" Nullable="false" />
+          <Property Name="ORGANIZATION_ID" Type="nvarchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="DM_FACTORY">
           <Key>
@@ -609,11 +610,13 @@
           <Key>
             <PropertyRef Name="REPORT_LINE_DETAIL_ID" />
           </Key>
-          <Property Name="REPORT_LINE_DETAIL_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="REPORT_LINE_DETAIL_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
           <Property Name="HEADCOUNT" Type="money" Nullable="false" />
           <Property Name="TAKT_TIME" Type="money" Nullable="false" />
+          <Property Name="USER_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
+          <Property Name="UPDATED" Type="datetime" Nullable="false" />
         </EntityType>
-        <EntityType Name="MES_TMP_UPDATE_REPORT_LINE_DETAIL">
+        <EntityType Name="MES_UPDATE_REPORT_LINE_DETAIL">
           <Key>
             <PropertyRef Name="PK_KEY" />
           </Key>
@@ -623,9 +626,14 @@
           <Property Name="WORK_PLAN_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
           <Property Name="WORK_PLAN_DETAIL_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
           <Property Name="TIME_NAME" Type="nvarchar" MaxLength="36" Nullable="false" />
+          <Property Name="UNIQUE_NO" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="START_AT" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+          <Property Name="FINISH_AT" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="ACTUAL_QUANTITY" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="ACTUAL_NG_QUANTITY" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="STATUS" Type="smallint" Nullable="false" />
+          <Property Name="USER_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
+          <Property Name="UPDATED" Type="datetime" Nullable="false" />
         </EntityType>
         <EntityType Name="MES_WORK_ORDER">
           <Key>
@@ -743,7 +751,7 @@
           <EntitySet Name="MES_TMP_EVENT_RAW_DATA" EntityType="Self.MES_TMP_EVENT_RAW_DATA" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_TMP_PMS_DATA" EntityType="Self.MES_TMP_PMS_DATA" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_TMP_UPDATE_CONFIG" EntityType="Self.MES_TMP_UPDATE_CONFIG" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="MES_TMP_UPDATE_REPORT_LINE_DETAIL" EntityType="Self.MES_TMP_UPDATE_REPORT_LINE_DETAIL" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="MES_UPDATE_REPORT_LINE_DETAIL" EntityType="Self.MES_UPDATE_REPORT_LINE_DETAIL" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_WORK_ORDER" EntityType="Self.MES_WORK_ORDER" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_WORK_PLAN" EntityType="Self.MES_WORK_PLAN" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL" EntityType="Self.MES_WORK_PLAN_DETAIL" Schema="dbo" store:Type="Tables" />
@@ -783,7 +791,6 @@
           <EntitySet Name="MES_RESPONSIBILITY" EntityType="DomainDbContext.MES_RESPONSIBILITY" />
           <EntitySet Name="MES_STOP_REASON" EntityType="DomainDbContext.MES_STOP_REASON" />
           <EntitySet Name="MES_TMP_PMS_DATA" EntityType="DomainDbContext.MES_TMP_PMS_DATA" />
-          <EntitySet Name="MES_TMP_UPDATE_CONFIG" EntityType="DomainDbContext.MES_TMP_UPDATE_CONFIG" />
           <EntitySet Name="MES_WORK_ORDER" EntityType="DomainDbContext.MES_WORK_ORDER" />
           <EntitySet Name="MES_WORK_PLAN" EntityType="DomainDbContext.MES_WORK_PLAN" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL_HISTORY" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" />
@@ -791,8 +798,9 @@
           <EntitySet Name="DM_FACTORY" EntityType="DomainDbContext.DM_FACTORY" />
           <EntitySet Name="MES_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_LINE_EVENT" EntityType="DomainDbContext.MES_LINE_EVENT" />
-          <EntitySet Name="MES_TMP_UPDATE_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_TMP_UPDATE_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_TMP_EVENT_RAW_DATA" EntityType="DomainDbContext.MES_TMP_EVENT_RAW_DATA" />
+          <EntitySet Name="MES_TMP_UPDATE_CONFIG" EntityType="DomainDbContext.MES_TMP_UPDATE_CONFIG" />
+          <EntitySet Name="MES_UPDATE_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_UPDATE_REPORT_LINE_DETAIL" />
         </EntityContainer>
         <EntityType Name="DG_DM_SHIFT">
           <Key>
@@ -808,6 +816,7 @@
           <Property Name="COMMENTS" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="ACTIVE" Type="Int16" Nullable="false" />
           <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Name="ORGANIZATION_ID" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="DM_MES_BREAK_TIME">
           <Key>
@@ -1281,14 +1290,6 @@
           <Property Name="Status" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="LastProductionTime" Type="DateTime" Precision="3" />
         </EntityType>
-        <EntityType Name="MES_TMP_UPDATE_CONFIG">
-          <Key>
-            <PropertyRef Name="REPORT_LINE_DETAIL_ID" />
-          </Key>
-          <Property Name="REPORT_LINE_DETAIL_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="HEADCOUNT" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
-          <Property Name="TAKT_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
-        </EntityType>
         <EntityType Name="MES_WORK_ORDER">
           <Key>
             <PropertyRef Name="WORK_ORDER_ID" />
@@ -1474,7 +1475,26 @@
           <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
         </EntityType>
-        <EntityType Name="MES_TMP_UPDATE_REPORT_LINE_DETAIL">
+        <EntityType Name="MES_TMP_EVENT_RAW_DATA">
+          <Key>
+            <PropertyRef Name="PK_KEY" />
+          </Key>
+          <Property Name="PK_KEY" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="START_TIME" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="MES_TMP_UPDATE_CONFIG">
+          <Key>
+            <PropertyRef Name="REPORT_LINE_DETAIL_ID" />
+          </Key>
+          <Property Name="REPORT_LINE_DETAIL_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="HEADCOUNT" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="TAKT_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="UPDATED" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="MES_UPDATE_REPORT_LINE_DETAIL">
           <Key>
             <PropertyRef Name="PK_KEY" />
           </Key>
@@ -1484,18 +1504,14 @@
           <Property Name="WORK_PLAN_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
           <Property Name="WORK_PLAN_DETAIL_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
           <Property Name="TIME_NAME" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="UNIQUE_NO" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="START_AT" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="FINISH_AT" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="ACTUAL_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="ACTUAL_NG_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="STATUS" Type="Int16" Nullable="false" />
-        </EntityType>
-        <EntityType Name="MES_TMP_EVENT_RAW_DATA">
-          <Key>
-            <PropertyRef Name="PK_KEY" />
-          </Key>
-          <Property Name="PK_KEY" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
-          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
-          <Property Name="START_TIME" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="UPDATED" Type="DateTime" Nullable="false" Precision="3" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -1506,6 +1522,7 @@
           <EntitySetMapping Name="DG_DM_SHIFT">
             <EntityTypeMapping TypeName="DomainDbContext.DG_DM_SHIFT">
               <MappingFragment StoreEntitySet="DG_DM_SHIFT">
+                <ScalarProperty Name="ORGANIZATION_ID" ColumnName="ORGANIZATION_ID" />
                 <ScalarProperty Name="USER_ID" ColumnName="USER_ID" />
                 <ScalarProperty Name="ACTIVE" ColumnName="ACTIVE" />
                 <ScalarProperty Name="COMMENTS" ColumnName="COMMENTS" />
@@ -2019,15 +2036,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="MES_TMP_UPDATE_CONFIG">
-            <EntityTypeMapping TypeName="DomainDbContext.MES_TMP_UPDATE_CONFIG">
-              <MappingFragment StoreEntitySet="MES_TMP_UPDATE_CONFIG">
-                <ScalarProperty Name="TAKT_TIME" ColumnName="TAKT_TIME" />
-                <ScalarProperty Name="HEADCOUNT" ColumnName="HEADCOUNT" />
-                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="MES_WORK_ORDER">
             <EntityTypeMapping TypeName="DomainDbContext.MES_WORK_ORDER">
               <MappingFragment StoreEntitySet="MES_WORK_ORDER">
@@ -2220,27 +2228,43 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="MES_TMP_UPDATE_REPORT_LINE_DETAIL">
-            <EntityTypeMapping TypeName="DomainDbContext.MES_TMP_UPDATE_REPORT_LINE_DETAIL">
-              <MappingFragment StoreEntitySet="MES_TMP_UPDATE_REPORT_LINE_DETAIL">
-                <ScalarProperty Name="STATUS" ColumnName="STATUS" />
-                <ScalarProperty Name="ACTUAL_NG_QUANTITY" ColumnName="ACTUAL_NG_QUANTITY" />
-                <ScalarProperty Name="ACTUAL_QUANTITY" ColumnName="ACTUAL_QUANTITY" />
-                <ScalarProperty Name="TIME_NAME" ColumnName="TIME_NAME" />
-                <ScalarProperty Name="WORK_PLAN_DETAIL_ID" ColumnName="WORK_PLAN_DETAIL_ID" />
-                <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
-                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
-                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
-                <ScalarProperty Name="PK_KEY" ColumnName="PK_KEY" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="MES_TMP_EVENT_RAW_DATA">
             <EntityTypeMapping TypeName="DomainDbContext.MES_TMP_EVENT_RAW_DATA">
               <MappingFragment StoreEntitySet="MES_TMP_EVENT_RAW_DATA">
                 <ScalarProperty Name="START_TIME" ColumnName="START_TIME" />
                 <ScalarProperty Name="EVENTDEF_ID" ColumnName="EVENTDEF_ID" />
                 <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
+                <ScalarProperty Name="PK_KEY" ColumnName="PK_KEY" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="MES_TMP_UPDATE_CONFIG">
+            <EntityTypeMapping TypeName="DomainDbContext.MES_TMP_UPDATE_CONFIG">
+              <MappingFragment StoreEntitySet="MES_TMP_UPDATE_CONFIG">
+                <ScalarProperty Name="UPDATED" ColumnName="UPDATED" />
+                <ScalarProperty Name="USER_ID" ColumnName="USER_ID" />
+                <ScalarProperty Name="TAKT_TIME" ColumnName="TAKT_TIME" />
+                <ScalarProperty Name="HEADCOUNT" ColumnName="HEADCOUNT" />
+                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="MES_UPDATE_REPORT_LINE_DETAIL">
+            <EntityTypeMapping TypeName="DomainDbContext.MES_UPDATE_REPORT_LINE_DETAIL">
+              <MappingFragment StoreEntitySet="MES_UPDATE_REPORT_LINE_DETAIL">
+                <ScalarProperty Name="UPDATED" ColumnName="UPDATED" />
+                <ScalarProperty Name="USER_ID" ColumnName="USER_ID" />
+                <ScalarProperty Name="STATUS" ColumnName="STATUS" />
+                <ScalarProperty Name="ACTUAL_NG_QUANTITY" ColumnName="ACTUAL_NG_QUANTITY" />
+                <ScalarProperty Name="ACTUAL_QUANTITY" ColumnName="ACTUAL_QUANTITY" />
+                <ScalarProperty Name="FINISH_AT" ColumnName="FINISH_AT" />
+                <ScalarProperty Name="START_AT" ColumnName="START_AT" />
+                <ScalarProperty Name="UNIQUE_NO" ColumnName="UNIQUE_NO" />
+                <ScalarProperty Name="TIME_NAME" ColumnName="TIME_NAME" />
+                <ScalarProperty Name="WORK_PLAN_DETAIL_ID" ColumnName="WORK_PLAN_DETAIL_ID" />
+                <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
+                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
+                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
                 <ScalarProperty Name="PK_KEY" ColumnName="PK_KEY" />
               </MappingFragment>
             </EntityTypeMapping>

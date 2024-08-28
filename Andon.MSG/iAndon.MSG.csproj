@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Avani.Helper">
-      <HintPath>..\Andon.Yokowo.Edge.Logic\Libs\Avani.Helper.dll</HintPath>
+      <HintPath>..\Andon.Biz.Logic\libs\Avani.Helper.dll</HintPath>
     </Reference>
     <Reference Include="EasyNetQ, Version=5.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\EasyNetQ.5.4.0\lib\net461\EasyNetQ.dll</HintPath>
@@ -82,6 +82,12 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Andon.Biz.Helper\iAndon.Biz.Helper.csproj">
+      <Project>{6a3d41b5-b3c3-4c1e-800a-935874cffa5e}</Project>
+      <Name>iAndon.Biz.Helper</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

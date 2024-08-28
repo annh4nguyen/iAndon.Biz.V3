@@ -34,7 +34,6 @@
         <EntityTypeShape EntityType="DomainDbContext.MES_RESPONSIBILITY" Width="1.5" PointX="16.75" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_STOP_REASON" Width="1.5" PointX="16.75" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_TMP_PMS_DATA" Width="1.5" PointX="16.75" PointY="8.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_TMP_UPDATE_CONFIG" Width="1.5" PointX="16.75" PointY="12.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_ORDER" Width="1.5" PointX="16.75" PointY="15.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN" Width="1.5" PointX="4.75" PointY="17.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" Width="1.5" PointX="6.75" PointY="17.75" />
@@ -42,8 +41,9 @@
         <EntityTypeShape EntityType="DomainDbContext.DM_FACTORY" Width="1.5" PointX="11.375" PointY="17.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" Width="1.5" PointX="0.75" PointY="16.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LINE_EVENT" Width="1.5" PointX="19.375" PointY="0.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_TMP_UPDATE_REPORT_LINE_DETAIL" Width="1.5" PointX="19.375" PointY="7.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_TMP_EVENT_RAW_DATA" Width="1.5" PointX="19.375" PointY="11.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_TMP_UPDATE_CONFIG" Width="1.5" PointX="19.375" PointY="7.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_UPDATE_REPORT_LINE_DETAIL" Width="1.5" PointX="19.375" PointY="14.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

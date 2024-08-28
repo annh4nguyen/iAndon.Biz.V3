@@ -17,5 +17,7 @@ namespace iAndon.Biz.Logic
         public string REPORT_LINE_DETAIL_ID { get; set; }
         public decimal HEADCOUNT { get; set; }
         public decimal TAKT_TIME { get; set; }
+        public string USER_ID { get; set; }
+        public System.DateTime UPDATED { get; set; }
     }
 }

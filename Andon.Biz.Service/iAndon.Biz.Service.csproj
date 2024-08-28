@@ -126,6 +126,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Andon.Biz.Helper\iAndon.Biz.Helper.csproj">
+      <Project>{6a3d41b5-b3c3-4c1e-800a-935874cffa5e}</Project>
+      <Name>iAndon.Biz.Helper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Andon.Biz.Logic\iAndon.Biz.Logic.csproj">
       <Project>{6a6217f7-7596-48ed-b5c7-2957aec50162}</Project>
       <Name>iAndon.Biz.Logic</Name>

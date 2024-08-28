@@ -12,7 +12,7 @@ namespace iAndon.Biz.Logic
     using System;
     using System.Collections.Generic;
     
-    public partial class MES_TMP_UPDATE_REPORT_LINE_DETAIL
+    public partial class MES_UPDATE_REPORT_LINE_DETAIL
     {
         public string PK_KEY { get; set; }
         public string REPORT_LINE_DETAIL_ID { get; set; }
@@ -20,8 +20,13 @@ namespace iAndon.Biz.Logic
         public string WORK_PLAN_ID { get; set; }
         public string WORK_PLAN_DETAIL_ID { get; set; }
         public string TIME_NAME { get; set; }
+        public string UNIQUE_NO { get; set; }
+        public decimal START_AT { get; set; }
+        public decimal FINISH_AT { get; set; }
         public decimal ACTUAL_QUANTITY { get; set; }
         public decimal ACTUAL_NG_QUANTITY { get; set; }
         public short STATUS { get; set; }
+        public string USER_ID { get; set; }
+        public System.DateTime UPDATED { get; set; }
     }
 }

@@ -24,5 +24,6 @@ namespace iAndon.Biz.Logic
         public string COMMENTS { get; set; }
         public short ACTIVE { get; set; }
         public string USER_ID { get; set; }
+        public string ORGANIZATION_ID { get; set; }
     }
 }

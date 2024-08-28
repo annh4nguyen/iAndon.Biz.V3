@@ -42,7 +42,7 @@
             this.iAndonBizServiceV3Installer.DelayedAutoStart = true;
             this.iAndonBizServiceV3Installer.Description = "The iAndon Biz Service Enables you to proccess bussiness with data from processes" +
     ".";
-            this.iAndonBizServiceV3Installer.DisplayName = "iAndon Biz Service V3";
+            this.iAndonBizServiceV3Installer.DisplayName = "Avani iAndon Biz Service V3";
             this.iAndonBizServiceV3Installer.ServiceName = "Service";
             this.iAndonBizServiceV3Installer.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 

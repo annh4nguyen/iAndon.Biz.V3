@@ -45,9 +45,6 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="iAndon.Yokowo.MSG">
-      <HintPath>..\..\Edge\Andon.Yokowo.MSG\bin\Debug\iAndon.Yokowo.MSG.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -208,7 +205,7 @@
     <Compile Include="MES_TMP_UPDATE_CONFIG.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
-    <Compile Include="MES_TMP_UPDATE_REPORT_LINE_DETAIL.cs">
+    <Compile Include="MES_UPDATE_REPORT_LINE_DETAIL.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_WORK_ORDER.cs">
@@ -263,17 +260,24 @@
       <DependentUpon>Data.edmx</DependentUpon>
       <LastGenOutput>Data.cs</LastGenOutput>
     </Content>
+    <Content Include="libs\Avani.Andon.Resources.dll" />
     <Content Include="libs\Avani.Helper.dll" />
-    <Content Include="libs\iAndon.Yokowo.MSG.dll" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Andon.Biz.Helper\iAndon.Biz.Helper.csproj">
+      <Project>{6a3d41b5-b3c3-4c1e-800a-935874cffa5e}</Project>
+      <Name>iAndon.Biz.Helper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Andon.MSG\iAndon.MSG.csproj">
       <Project>{5aa29d36-7e71-4016-b5c1-0def06770d34}</Project>
       <Name>iAndon.MSG</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
