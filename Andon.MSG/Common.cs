@@ -22,6 +22,7 @@ namespace iAndon.MSG
         Andon = 1,
         TempHumd = 2,
         Electricity = 3,
+        PMS = 4,
     }
 }
 

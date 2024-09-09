@@ -30,6 +30,7 @@ namespace iAndon.Biz.Logic
         public decimal TOTAL_DURATION { get; set; }
         public string REASON_ID { get; set; }
         public string RESPONSIBILITY_ID { get; set; }
+        public string NODE_ID { get; set; }
         public string DESCRIPTION { get; set; }
         public string COMMENT { get; set; }
         public string WORK_PLAN_ID { get; set; }
@@ -39,5 +40,6 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_ID { get; set; }
         public string PRODUCT_CODE { get; set; }
         public string PRODUCT_NAME { get; set; }
+        public short STATUS { get; set; }
     }
 }

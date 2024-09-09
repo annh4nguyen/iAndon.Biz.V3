@@ -17,6 +17,7 @@ namespace iAndon.Biz.Logic
         public string PK_KEY { get; set; }
         public string LINE_ID { get; set; }
         public string EVENTDEF_ID { get; set; }
+        public string REASON_ID { get; set; }
         public System.DateTime START_TIME { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using EasyNetQ;
+using iAndon;
 using System;
 using System.Xml.Serialization;
 using System.IO;
@@ -7,19 +8,19 @@ using Avani.Helper;
 
 namespace iAndon.MSG
 {
-    [Queue("iAndon.DSV.MSG", ExchangeName = "iAndon.DSV")]
-    public class DSV_MSG
+    [Queue("iAndon.PMS.MSG", ExchangeName = "iAndon.PMS")]
+    public class PMS_MSG
     {
         [XmlElement(ElementName = "h")]
         public Header Header { get; set; }
         [XmlElement(ElementName = "b")]
-        public DSV_BodyMessage Body { get; set; }
-        public DSV_MSG()
+        public PMS_BodyMessage Body { get; set; }
+        public PMS_MSG()
         {
             this.Header = new Header();
-            this.Body = new DSV_BodyMessage();
+            this.Body = new PMS_BodyMessage();
         }
-        public DSV_MSG(string from, DateTime time, MessageType type, int nodeId, int in01, int in02, int in03)
+        public PMS_MSG(string from, DateTime time, MessageType type, PMS_BodyMessage bodyMessage)
         {
             this.Header = new Header()
             {
@@ -27,12 +28,18 @@ namespace iAndon.MSG
                 Time = time,
                 Type = type
             };
-            this.Body = new DSV_BodyMessage()
+            this.Body = new PMS_BodyMessage()
             {
-                NodeId = nodeId,
-                In01 = in01,
-                In02 = in02,
-                In03 = in03,
+                productlineid = bodyMessage.productlineid,
+                planid = bodyMessage.planid,
+                ponumber = bodyMessage.ponumber,
+                productcode = bodyMessage.productcode,
+                productname = bodyMessage.productname,
+                model = bodyMessage.model,
+                planquantity = bodyMessage.planquantity,
+                actualquantity = bodyMessage.actualquantity,
+                status = bodyMessage.status,
+                lastproductiontime = bodyMessage.lastproductiontime
             };
         }
         public string Serialize()
@@ -80,13 +87,19 @@ namespace iAndon.MSG
 
     }
 
-    public class DSV_BodyMessage
+    public class PMS_BodyMessage
     {
-        [XmlElement(ElementName = "m")]
-        public int NodeId { get; set; }
-        public int In01 { get; set; }
-        public int In02 { get; set; }
-        public int In03 { get; set; }
+        [XmlElement(ElementName = "pms")]
+        public int productlineid { get; set; }
+        public double planid { get; set; }
+        public double ponumber { get; set; }
+        public string productcode { get; set; }
+        public string productname { get; set; }
+        public string model { get; set; }
+        public int planquantity { get; set; }
+        public int actualquantity { get; set; }
+        public string status { get; set; }
+        public string lastproductiontime { get; set; }
     }
 
 

@@ -26,25 +26,29 @@ namespace iAndon.Biz.Logic
         public decimal PLAN_WORKING_DURATION { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
         public decimal PLAN_TAKT_TIME { get; set; }
+        public short PLAN_HEAD_COUNT { get; set; }
         public decimal PLAN_UPH { get; set; }
+        public decimal PLAN_UPPH { get; set; }
         public System.DateTime STARTED { get; set; }
         public System.DateTime FINISHED { get; set; }
         public decimal TARGET_QUANTITY { get; set; }
         public decimal ACTUAL_DURATION { get; set; }
         public decimal ACTUAL_BREAK_DURATION { get; set; }
         public decimal ACTUAL_STOP_DURATION { get; set; }
-        public int NUMBER_OF_STOP { get; set; }
+        public short NUMBER_OF_STOP { get; set; }
         public decimal ACTUAL_WORKING_DURATION { get; set; }
         public decimal ACTUAL_QUANTITY { get; set; }
         public decimal ACTUAL_NG_QUANTITY { get; set; }
         public decimal ACTUAL_TAKT_TIME { get; set; }
+        public short ACTUAL_HEAD_COUNT { get; set; }
         public decimal ACTUAL_UPH { get; set; }
+        public decimal ACTUAL_UPPH { get; set; }
         public decimal PLAN_RATE { get; set; }
         public decimal TARGET_RATE { get; set; }
         public decimal TIME_RATE { get; set; }
         public decimal QUALITY_RATE { get; set; }
         public decimal OEE { get; set; }
         public string RESULT { get; set; }
-        public int STATUS { get; set; }
+        public short STATUS { get; set; }
     }
 }

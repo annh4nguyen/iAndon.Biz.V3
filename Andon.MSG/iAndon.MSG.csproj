@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common.cs" />
+    <Compile Include="iAndon.PMS.MSG.cs" />
     <Compile Include="iAndon.DSV.MSG.cs" />
     <Compile Include="iAndon.MSG.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

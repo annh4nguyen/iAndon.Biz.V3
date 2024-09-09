@@ -25,9 +25,25 @@ namespace iAndon.Biz.Logic.Models
                 SHIFT_ID = _tblWorkPlan.SHIFT_ID,
                 STATUS = _tblWorkPlan.STATUS,
             };
+            return workPlan;
+        }
+        public WorkPlan Cast(MES_WORK_PLAN _tblWorkPlan, Shift shift)
+        {
+            WorkPlan workPlan = new WorkPlan()
+            {
+                WORK_PLAN_ID = _tblWorkPlan.WORK_PLAN_ID,
+                DAY = _tblWorkPlan.DAY,
+                LINE_ID = _tblWorkPlan.LINE_ID,
+                SHIFT_ID = _tblWorkPlan.SHIFT_ID,
+                STATUS = _tblWorkPlan.STATUS,
+            };
+
+            workPlan.PlanStart = shift.Start;
+            workPlan.PlanFinish = shift.Finish;
 
             return workPlan;
         }
+
         public MES_WORK_PLAN Cast()
         {
             MES_WORK_PLAN tblWorkPlan = new MES_WORK_PLAN()
@@ -50,10 +66,16 @@ namespace iAndon.Biz.Logic.Models
         public decimal Duration { get; set; }
 
         public List<BreakTime> BreakTimes = new List<BreakTime>();
-        
+
         public void Cast(DG_DM_SHIFT _shift, decimal _fullday = 0)
         {
             this.SHIFT_ID = _shift.SHIFT_ID;
+            this.SHIFT_NAME = _shift.SHIFT_NAME;
+            this.ACTIVE = _shift.ACTIVE;
+            this.COMMENTS = _shift.COMMENTS;
+            this.ORGANIZATION_ID = _shift.ORGANIZATION_ID;
+            this.SHIFT_ID_RC = _shift.SHIFT_ID_RC;
+
             this.HOUR_START = _shift.HOUR_START;
             this.MINUTE_START = _shift.MINUTE_START;
             this.HOUR_END = _shift.HOUR_END;
@@ -70,7 +92,10 @@ namespace iAndon.Biz.Logic.Models
             decimal _day = _fullday % 100;
             this.Start = new DateTime((int)_year, (int)_month, (int)_day, this.HOUR_START, this.MINUTE_START, 0);
             this.Finish = new DateTime((int)_year, (int)_month, (int)_day, this.HOUR_END, this.MINUTE_END, 0);
+            
+            //Điều chỉnh giảm thời gian Buffer
             this.Finish = this.Finish.AddMinutes(0 - Consts.BUFFER_TIME_IN_MINUTE);
+            this.Finish = this.Finish.AddSeconds(0 - Consts.BUFFER_TIME_IN_SECOND);
 
             if (this.HOUR_START < Consts.HOUR_FOR_NEW_DAY)
             {
@@ -86,8 +111,10 @@ namespace iAndon.Biz.Logic.Models
             {
                 this.Finish = this.Finish.AddDays(1);
             }
+
             this.Duration = (decimal)(this.Finish - this.Start).TotalSeconds;
         }
+      
     }
 
     public class BreakTime : DM_MES_BREAK_TIME
@@ -141,4 +168,11 @@ namespace iAndon.Biz.Logic.Models
         public decimal Duration { get; set; }
     }
 
+    public class ProductionTemp
+    {
+        public string WorkPlanDetailId { get; set; }
+        public string TimeName { get; set; }
+        public decimal ActualQuantity { get; set; }
+        public decimal NGQuantity { get; set; }
+    }
 }

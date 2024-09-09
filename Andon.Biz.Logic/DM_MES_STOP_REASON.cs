@@ -12,13 +12,14 @@ namespace iAndon.Biz.Logic
     using System;
     using System.Collections.Generic;
     
-    public partial class MES_STOP_REASON
+    public partial class DM_MES_STOP_REASON
     {
         public string REASON_ID { get; set; }
         public string REASON_NAME_VN { get; set; }
         public string REASON_NAME_EN { get; set; }
         public string DESCRIPTION { get; set; }
         public int NUMBER_ORDER { get; set; }
+        public string REASON_COLOR { get; set; }
         public string USER_ID { get; set; }
         public bool ACTIVE { get; set; }
         public int PARENT_ID { get; set; }

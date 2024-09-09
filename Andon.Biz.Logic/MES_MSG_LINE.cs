@@ -22,26 +22,45 @@ namespace iAndon.Biz.Logic
         public string EVENTDEF_NAME_VN { get; set; }
         public string EVENTDEF_NAME_EN { get; set; }
         public string EVENTDEF_COLOR { get; set; }
+        public string SHIFT_ID { get; set; }
+        public string SHIFT_NAME { get; set; }
+        public System.DateTime SHIFT_START { get; set; }
+        public System.DateTime SHIFT_FINISH { get; set; }
         public string PRODUCT_ID { get; set; }
         public string PRODUCT_CODE { get; set; }
         public string PRODUCT_NAME { get; set; }
         public string PRODUCT_CATEGORY_ID { get; set; }
         public string PRODUCT_CATEGORY_CODE { get; set; }
         public string PRODUCT_CATEGORY_NAME { get; set; }
-        public int HEAD_COUNT { get; set; }
+        public short TOTAL_HEAD_COUNT { get; set; }
+        public short HEAD_COUNT { get; set; }
+        public decimal TOTAL_TAKT_TIME { get; set; }
         public decimal TAKT_TIME { get; set; }
+        public decimal TOTAL_UPH { get; set; }
+        public decimal UPH { get; set; }
+        public decimal TOTAL_UPPH { get; set; }
+        public decimal UPPH { get; set; }
         public decimal TOTAL_PLAN_QUANTITY { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
+        public decimal TOTAL_TARGET_QUANTITY { get; set; }
         public decimal TARGET_QUANTITY { get; set; }
+        public decimal TOTAL_ACTUAL_QUANTITY { get; set; }
         public decimal ACTUAL_QUANTITY { get; set; }
+        public decimal TOTAL_ACTUAL_NG_QUANTITY { get; set; }
         public decimal ACTUAL_NG_QUANTITY { get; set; }
-        public decimal STOP_DURATION { get; set; }
         public decimal TOTAL_STOP_DURATION { get; set; }
-        public int NUMBER_OF_STOP { get; set; }
+        public short TOTAL_NUMBER_OF_STOP { get; set; }
+        public decimal STOP_DURATION { get; set; }
+        public short NUMBER_OF_STOP { get; set; }
+        public decimal TOTAL_PLAN_RATE { get; set; }
         public decimal PLAN_RATE { get; set; }
+        public decimal TOTAL_TARGET_RATE { get; set; }
         public decimal TARGET_RATE { get; set; }
+        public decimal TOTAL_TIME_RATE { get; set; }
         public decimal TIME_RATE { get; set; }
+        public decimal TOTAL_QUALITY_RATE { get; set; }
         public decimal QUALITY_RATE { get; set; }
+        public decimal TOTAL_OEE { get; set; }
         public decimal OEE { get; set; }
         public int CURRENT_DETAIL { get; set; }
         public System.DateTime TIME_UPDATED { get; set; }

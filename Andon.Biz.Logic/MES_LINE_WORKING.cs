@@ -28,5 +28,6 @@ namespace iAndon.Biz.Logic
         public string EVENTDEF_NAME_EN { get; set; }
         public string EVENTDEF_COLOR { get; set; }
         public decimal DURATION { get; set; }
+        public short NUMBER_ORDER { get; set; }
     }
 }

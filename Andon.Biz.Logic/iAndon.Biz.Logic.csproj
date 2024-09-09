@@ -133,6 +133,9 @@
     <Compile Include="DM_MES_PRODUCT_CONFIG.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
+    <Compile Include="DM_MES_STOP_REASON.cs">
+      <DependentUpon>Data.tt</DependentUpon>
+    </Compile>
     <Compile Include="DM_MES_ZONE.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
@@ -191,9 +194,6 @@
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_RESPONSIBILITY.cs">
-      <DependentUpon>Data.tt</DependentUpon>
-    </Compile>
-    <Compile Include="MES_STOP_REASON.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_TMP_EVENT_RAW_DATA.cs">

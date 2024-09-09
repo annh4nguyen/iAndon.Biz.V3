@@ -18,11 +18,16 @@ namespace iAndon.Biz.Logic
         public static DateTime DEFAULT_TIME = new DateTime(2024, 1, 1, 6, 0, 0); //Bổ sung cái này cho đỡ lỗi
         public static DateTime MAX_TIME = new DateTime(2050, 1, 1, 6, 0, 0); //Bổ sung cái này cho đỡ lỗi
 
-        public static int ON_STATUS = 1;
-        public static int OFF_STATUS = 0;
+        public static short DRAFT_STATUS = 0;
+        public static short DONE_STATUS = 3;
+        public static short ACCEPT_STATUS = 1;
+        public static short REJECT_STATUS = -1;
 
-        public static int DEFAULT_QUANTITY = 1260;
-        public static int DEFAULT_CYCLE_TIME = 20;
+        public static short ON_STATUS = 1;
+        public static short OFF_STATUS = 0;
+
+        public static short DEFAULT_QUANTITY = 1260;
+        public static short DEFAULT_CYCLE_TIME = 20;
 
 
         public static string Production_Good = "Good";
@@ -40,11 +45,12 @@ namespace iAndon.Biz.Logic
         public static string EVENTDEF_DEFAULT = "0";
         public static string EVENTDEF_DEFAULT_NAME_EN = "REMAINED";
         public static string EVENTDEF_DEFAULT_NAME_VN = "Còn lại";
+        public static string EVENTDEF_DEFAULT_COLOR = "#FFF";
         //====================================================
 
 
-        public static int CUSTOMER_ID = 3;
-        public static int FACTORY_ID = 1;
+        public static short CUSTOMER_ID = 3;
+        public static short FACTORY_ID = 1;
 
         // Date 15-02-2022 cập nhật lại format ngày từ dd/MM/yyyy -> yyyy-MM-dd
         public static string MIN_DATE = "2022-01-01";
@@ -52,38 +58,19 @@ namespace iAndon.Biz.Logic
         // Date 15-02-2022 cập nhật lại format ngày từ dd/MM/yyyy -> yyyy-MM-dd
         public static string MAX_DATE = "2222-12-31";
 
-        public static int START_TIME_SLOT = 65;
+        public static short START_TIME_SLOT = 65;
 
-        public static int HOUR_FOR_NEW_DAY = 6;
+        public static short HOUR_FOR_NEW_DAY = 6;
 
-        public static int VERIFY_EVENT = 30; //30 giây
+        public static short VERIFY_EVENT = 30; //30 giây
 
-        public static int BUFFER_TIME_IN_MINUTE = 1;
-        public static int BUFFER_TIME_IN_SECOND = 0;
+        public static short BUFFER_TIME_IN_MINUTE = 0;
+        public static short BUFFER_TIME_IN_SECOND = 1;
 
-        public const int MinuteArchive = 1;
-        public const int HourArchive = 2;
-        public const int DayArchive = 3;
-        public const int MonthArchive = 4;
-        public const int YearArchive = 5;
-
-        public long Time2Num(DateTime time, int type)
-        {
-            if (type == YearArchive) return long.Parse($"{time:yyyy}");
-            if (type == MonthArchive) return long.Parse($"{time:yyyyMM}");
-            if (type == DayArchive) return long.Parse($"{time:yyyyMMdd}");
-            if (type == HourArchive) return long.Parse($"{time:yyyyMMddHH}");
-            if (type == MinuteArchive) return long.Parse($"{time:yyyyMMddHHmm}");
-            return 0;
-        }
-        public DateTime Num2Time(long num, int type)
-        {
-            if (type == MinuteArchive) return new DateTime(int.Parse($"{num:0}".Substring(0, 4)), int.Parse($"{num:0}".Substring(4, 2)), int.Parse($"{num:0}".Substring(6, 2)), int.Parse($"{num:0}".Substring(8, 2)), int.Parse($"{num:0}".Substring(10, 2)), 0);
-            if (type == HourArchive) return new DateTime(int.Parse($"{num:0}".Substring(0, 4)), int.Parse($"{num:0}".Substring(4, 2)), int.Parse($"{num:0}".Substring(6, 2)), int.Parse($"{num:0}".Substring(8, 2)), 0, 0);
-            if (type == DayArchive) return new DateTime(int.Parse($"{num:0}".Substring(0, 4)), int.Parse($"{num:0}".Substring(4, 2)), int.Parse($"{num:0}".Substring(6, 2)), 0, 0, 0);
-            if (type == MonthArchive) return new DateTime(int.Parse($"{num:0}".Substring(0, 4)), int.Parse($"{num:0}".Substring(4, 2)), 1, 0, 0, 0);
-            return new DateTime(int.Parse($"{num:0}".Substring(0, 4)), 1, 1, 0, 0, 0);
-        }
-
+        public const short MinuteArchive = 1;
+        public const short HourArchive = 2;
+        public const short DayArchive = 3;
+        public const short MonthArchive = 4;
+        public const short YearArchive = 5;
     }
 }

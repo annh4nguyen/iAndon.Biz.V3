@@ -23,6 +23,6 @@ namespace iAndon.Biz.Logic
         public System.DateTime DEADLINE { get; set; }
         public string DESCRIPTION { get; set; }
         public string PO_CODE { get; set; }
-        public int STATUS { get; set; }
+        public short STATUS { get; set; }
     }
 }

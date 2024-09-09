@@ -17,9 +17,11 @@ namespace iAndon.Biz.Logic
         public string ID { get; set; }
         public string LINE_ID { get; set; }
         public string EVENTDEF_ID { get; set; }
+        public string REASON_ID { get; set; }
         public string EVENTDEF_NAME_VN { get; set; }
         public string EVENTDEF_NAME_EN { get; set; }
         public string EVENTDEF_COLOR { get; set; }
         public decimal DURATION { get; set; }
+        public short NUMBER_ORDER { get; set; }
     }
 }

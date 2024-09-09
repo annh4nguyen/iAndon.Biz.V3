@@ -32,17 +32,15 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_NAME { get; set; }
         public string CONFIG_ID { get; set; }
         public string CONFIG_NAME { get; set; }
-        public int STATION_QUANTITY { get; set; }
-        public int BATCH { get; set; }
+        public short STATION_QUANTITY { get; set; }
+        public short BATCH { get; set; }
         public decimal PLAN_TAKT_TIME { get; set; }
         public decimal PLAN_UPH { get; set; }
         public decimal PLAN_UPPH { get; set; }
-        public int HEAD_COUNT { get; set; }
+        public short PLAN_HEAD_COUNT { get; set; }
         public decimal PLAN_DURATION { get; set; }
         public decimal RUNNING_TAKT_TIME { get; set; }
-        public decimal RUNNING_UPH { get; set; }
-        public decimal RUNNING_UPPH { get; set; }
-        public int RUNNING_HEAD_COUNT { get; set; }
+        public short RUNNING_HEAD_COUNT { get; set; }
         public decimal TOTAL_PLAN_QUANTITY { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
         public System.DateTime STARTED { get; set; }
@@ -50,7 +48,7 @@ namespace iAndon.Biz.Logic
         public decimal ACTUAL_DURATION { get; set; }
         public decimal BREAK_DURATION { get; set; }
         public decimal STOP_DURATION { get; set; }
-        public int NUMBER_OF_STOP { get; set; }
+        public short NUMBER_OF_STOP { get; set; }
         public decimal TARGET_QUANTITY { get; set; }
         public decimal START_AT { get; set; }
         public decimal FINISH_AT { get; set; }
@@ -59,14 +57,14 @@ namespace iAndon.Biz.Logic
         public decimal ACTUAL_TAKT_TIME { get; set; }
         public decimal ACTUAL_UPH { get; set; }
         public decimal ACTUAL_UPPH { get; set; }
-        public int ACTUAL_HEAD_COUNT { get; set; }
+        public short ACTUAL_HEAD_COUNT { get; set; }
         public decimal PLAN_RATE { get; set; }
         public decimal TARGET_RATE { get; set; }
         public decimal TIME_RATE { get; set; }
         public decimal QUALITY_RATE { get; set; }
         public decimal OEE { get; set; }
         public string RESULT { get; set; }
-        public int STATUS { get; set; }
-        public int DETAIL_INDEX { get; set; }
+        public short STATUS { get; set; }
+        public short DETAIL_INDEX { get; set; }
     }
 }

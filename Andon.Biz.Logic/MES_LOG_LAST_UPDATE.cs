@@ -20,5 +20,6 @@ namespace iAndon.Biz.Logic
         public string UPDATE_EVENT { get; set; }
         public string USER_ID { get; set; }
         public System.DateTime UPDATED { get; set; }
+        public short STATUS { get; set; }
     }
 }

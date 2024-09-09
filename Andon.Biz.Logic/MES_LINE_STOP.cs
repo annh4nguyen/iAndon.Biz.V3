@@ -31,5 +31,6 @@ namespace iAndon.Biz.Logic
         public string REASON_NAME_VN { get; set; }
         public string REASON_NAME_EN { get; set; }
         public decimal DURATION { get; set; }
+        public short NUMBER_ORDER { get; set; }
     }
 }

@@ -28,13 +28,13 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_CODE { get; set; }
         public string CONFIG_ID { get; set; }
         public decimal TAKT_TIME { get; set; }
-        public int STATION_QUANTITY { get; set; }
-        public int BATCH { get; set; }
-        public int HEAD_COUNT { get; set; }
+        public short STATION_QUANTITY { get; set; }
+        public short BATCH { get; set; }
+        public short HEAD_COUNT { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
         public decimal START_AT { get; set; }
         public decimal FINISH_AT { get; set; }
         public string DESCRIPTION { get; set; }
-        public int STATUS { get; set; }
+        public short STATUS { get; set; }
     }
 }
