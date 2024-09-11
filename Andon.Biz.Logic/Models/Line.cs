@@ -26,6 +26,13 @@ namespace iAndon.Biz.Logic.Models
         public string EventDefName_EN { get; set; }
         public string EventDefColor { get; set; }
         public string LastEventDefId { get; set; }
+
+        public string ReasonId { get; set; }
+        public string ReasonName_VN { get; set; }
+        public string ReasonName_EN { get; set; }
+        public string ReasonColor { get; set; }
+        public string LastReasonId { get; set; }
+
         public int CurrentDetail { get; set; }
         public DateTime Changed { get; set; }
 
@@ -57,6 +64,12 @@ namespace iAndon.Biz.Logic.Models
                 ReportLineDetails = new List<MES_REPORT_LINE_DETAIL>(),
                 CurrentDetail = 0,
                 Changed = DateTime.Now,
+
+                ReasonId = "",
+                ReasonName_VN = "",
+                ReasonName_EN = "",
+                ReasonColor = "",
+                LastReasonId = "",
             };
         }
     }

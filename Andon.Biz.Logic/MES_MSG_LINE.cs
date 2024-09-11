@@ -22,6 +22,10 @@ namespace iAndon.Biz.Logic
         public string EVENTDEF_NAME_VN { get; set; }
         public string EVENTDEF_NAME_EN { get; set; }
         public string EVENTDEF_COLOR { get; set; }
+        public string REASON_ID { get; set; }
+        public string REASON_NAME_VN { get; set; }
+        public string REASON_NAME_EN { get; set; }
+        public string REASON_COLOR { get; set; }
         public string SHIFT_ID { get; set; }
         public string SHIFT_NAME { get; set; }
         public System.DateTime SHIFT_START { get; set; }

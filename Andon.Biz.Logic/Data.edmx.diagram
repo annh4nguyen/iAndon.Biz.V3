@@ -29,7 +29,6 @@
         <EntityTypeShape EntityType="DomainDbContext.MES_UPDATE_REPORT_LINE_DETAIL" Width="1.5" PointX="19.375" PointY="14.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_TMP_EVENT_RAW_DATA" Width="1.5" PointX="19.375" PointY="10.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_STOP_REASON" Width="1.5" PointX="19.375" PointY="19.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_EVENT" Width="1.5" PointX="19.375" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LOG_LAST_UPDATE" Width="1.5" PointX="3.375" PointY="20.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_DETAIL" Width="1.5" PointX="21.375" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_PRODUCT" Width="1.5" PointX="21.375" PointY="7.75" />
@@ -37,13 +36,14 @@
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN" Width="1.5" PointX="7.75" PointY="15.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" Width="1.5" PointX="7.75" PointY="18.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" Width="1.5" PointX="9.75" PointY="21.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE" Width="1.5" PointX="15.75" PointY="14.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE" Width="1.5" PointX="0.75" PointY="19.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" Width="1.5" PointX="12.75" PointY="21.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_STOP" Width="1.5" PointX="11.375" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_WORKING" Width="1.5" PointX="11.375" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LINE_STOP" Width="1.5" PointX="0.75" PointY="9.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LINE_WORKING" Width="1.5" PointX="2.75" PointY="9.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE" Width="1.5" PointX="15.375" PointY="14.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_EVENT" Width="1.5" PointX="21.375" PointY="13.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

@@ -195,6 +195,7 @@
           <Property Name="EVENTDEF_NAME_EN" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="EVENTDEF_NAME_VN" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="EVENTDEF_COLOR" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="EVENTDEF_DESCRIPTION" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="START" Type="datetime" Nullable="false" />
           <Property Name="RESPONSE" Type="datetime" />
           <Property Name="FINISH" Type="datetime" />
@@ -282,6 +283,10 @@
           <Property Name="EVENTDEF_NAME_VN" Type="nvarchar" MaxLength="255" Nullable="false" />
           <Property Name="EVENTDEF_NAME_EN" Type="nvarchar" MaxLength="255" Nullable="false" />
           <Property Name="EVENTDEF_COLOR" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="REASON_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="REASON_NAME_VN" Type="nvarchar" MaxLength="255" Nullable="false" />
+          <Property Name="REASON_NAME_EN" Type="nvarchar" MaxLength="255" Nullable="false" />
+          <Property Name="REASON_COLOR" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="SHIFT_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="SHIFT_NAME" Type="nvarchar" MaxLength="250" Nullable="false" />
           <Property Name="SHIFT_START" Type="datetime" Nullable="false" />
@@ -821,7 +826,6 @@
           <EntitySet Name="MES_UPDATE_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_UPDATE_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_TMP_EVENT_RAW_DATA" EntityType="DomainDbContext.MES_TMP_EVENT_RAW_DATA" />
           <EntitySet Name="DM_MES_STOP_REASON" EntityType="DomainDbContext.DM_MES_STOP_REASON" />
-          <EntitySet Name="MES_LINE_EVENT" EntityType="DomainDbContext.MES_LINE_EVENT" />
           <EntitySet Name="MES_LOG_LAST_UPDATE" EntityType="DomainDbContext.MES_LOG_LAST_UPDATE" />
           <EntitySet Name="MES_MSG_LINE_DETAIL" EntityType="DomainDbContext.MES_MSG_LINE_DETAIL" />
           <EntitySet Name="MES_MSG_LINE_PRODUCT" EntityType="DomainDbContext.MES_MSG_LINE_PRODUCT" />
@@ -829,13 +833,14 @@
           <EntitySet Name="MES_WORK_PLAN" EntityType="DomainDbContext.MES_WORK_PLAN" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL_HISTORY" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" />
-          <EntitySet Name="MES_MSG_LINE" EntityType="DomainDbContext.MES_MSG_LINE" />
           <EntitySet Name="MES_REPORT_LINE" EntityType="DomainDbContext.MES_REPORT_LINE" />
           <EntitySet Name="MES_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_MSG_LINE_STOP" EntityType="DomainDbContext.MES_MSG_LINE_STOP" />
           <EntitySet Name="MES_MSG_LINE_WORKING" EntityType="DomainDbContext.MES_MSG_LINE_WORKING" />
           <EntitySet Name="MES_LINE_STOP" EntityType="DomainDbContext.MES_LINE_STOP" />
           <EntitySet Name="MES_LINE_WORKING" EntityType="DomainDbContext.MES_LINE_WORKING" />
+          <EntitySet Name="MES_MSG_LINE" EntityType="DomainDbContext.MES_MSG_LINE" />
+          <EntitySet Name="MES_LINE_EVENT" EntityType="DomainDbContext.MES_LINE_EVENT" />
         </EntityContainer>
         <EntityType Name="DG_DM_SHIFT">
           <Key>
@@ -1178,38 +1183,6 @@
           <Property Name="ACTIVE" Type="Boolean" Nullable="false" />
           <Property Name="PARENT_ID" Type="Int32" Nullable="false" />
         </EntityType>
-        <EntityType Name="MES_LINE_EVENT">
-          <Key>
-            <PropertyRef Name="EVENT_ID" />
-          </Key>
-          <Property Name="EVENT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="LINE_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="LINE_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_NAME_EN" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_NAME_VN" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="START" Type="DateTime" Nullable="false" Precision="3" />
-          <Property Name="RESPONSE" Type="DateTime" Precision="3" />
-          <Property Name="FINISH" Type="DateTime" Precision="3" />
-          <Property Name="WAIT_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="FIX_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="REASON_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="RESPONSIBILITY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="NODE_ID" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="DESCRIPTION" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="COMMENT" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="WORK_PLAN_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="DAY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="SHIFT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="REPORT_LINE_DETAIL_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="STATUS" Type="Int16" Nullable="false" />
-        </EntityType>
         <EntityType Name="MES_LOG_LAST_UPDATE">
           <Key>
             <PropertyRef Name="LOG_ID" />
@@ -1356,61 +1329,6 @@
           <Property Name="USER_ACTION" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
           <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
           <Property Name="UPDATED" Type="DateTime" Nullable="false" Precision="3" />
-        </EntityType>
-        <EntityType Name="MES_MSG_LINE">
-          <Key>
-            <PropertyRef Name="LINE_ID" />
-          </Key>
-          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="LINE_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="FACTORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="FACTORY_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_NAME_VN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_NAME_EN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="EVENTDEF_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="SHIFT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="SHIFT_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="SHIFT_START" Type="DateTime" Nullable="false" Precision="3" />
-          <Property Name="SHIFT_FINISH" Type="DateTime" Nullable="false" Precision="3" />
-          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CATEGORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CATEGORY_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CATEGORY_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
-          <Property Name="TOTAL_HEAD_COUNT" Type="Int16" Nullable="false" />
-          <Property Name="HEAD_COUNT" Type="Int16" Nullable="false" />
-          <Property Name="TOTAL_TAKT_TIME" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TAKT_TIME" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_UPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="UPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_UPPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="UPPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_PLAN_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="PLAN_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_TARGET_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TARGET_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_ACTUAL_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="ACTUAL_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_ACTUAL_NG_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="ACTUAL_NG_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_STOP_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="TOTAL_NUMBER_OF_STOP" Type="Int16" Nullable="false" />
-          <Property Name="STOP_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
-          <Property Name="NUMBER_OF_STOP" Type="Int16" Nullable="false" />
-          <Property Name="TOTAL_PLAN_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="PLAN_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_TARGET_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TARGET_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_TIME_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TIME_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_QUALITY_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="QUALITY_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="TOTAL_OEE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="OEE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="CURRENT_DETAIL" Type="Int32" Nullable="false" />
-          <Property Name="TIME_UPDATED" Type="DateTime" Nullable="false" Precision="3" />
         </EntityType>
         <EntityType Name="MES_REPORT_LINE">
           <Key>
@@ -1582,6 +1500,98 @@
           <Property Name="EVENTDEF_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
           <Property Name="NUMBER_ORDER" Type="Int16" Nullable="false" />
+        </EntityType>
+        <EntityType Name="MES_MSG_LINE">
+          <Key>
+            <PropertyRef Name="LINE_ID" />
+          </Key>
+          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LINE_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="FACTORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="FACTORY_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_NAME_VN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_NAME_EN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="REASON_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="REASON_NAME_VN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="REASON_NAME_EN" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="REASON_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="SHIFT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="SHIFT_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="SHIFT_START" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="SHIFT_FINISH" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CATEGORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CATEGORY_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CATEGORY_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="TOTAL_HEAD_COUNT" Type="Int16" Nullable="false" />
+          <Property Name="HEAD_COUNT" Type="Int16" Nullable="false" />
+          <Property Name="TOTAL_TAKT_TIME" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TAKT_TIME" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_UPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="UPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_UPPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="UPPH" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_PLAN_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="PLAN_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_TARGET_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TARGET_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_ACTUAL_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="ACTUAL_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_ACTUAL_NG_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="ACTUAL_NG_QUANTITY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_STOP_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_NUMBER_OF_STOP" Type="Int16" Nullable="false" />
+          <Property Name="STOP_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="NUMBER_OF_STOP" Type="Int16" Nullable="false" />
+          <Property Name="TOTAL_PLAN_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="PLAN_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_TARGET_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TARGET_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_TIME_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TIME_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_QUALITY_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="QUALITY_RATE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="TOTAL_OEE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="OEE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="CURRENT_DETAIL" Type="Int32" Nullable="false" />
+          <Property Name="TIME_UPDATED" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="MES_LINE_EVENT">
+          <Key>
+            <PropertyRef Name="EVENT_ID" />
+          </Key>
+          <Property Name="EVENT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LINE_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LINE_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="LINE_NAME" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_NAME_EN" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_NAME_VN" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_COLOR" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="EVENTDEF_DESCRIPTION" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="START" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="RESPONSE" Type="DateTime" Precision="3" />
+          <Property Name="FINISH" Type="DateTime" Precision="3" />
+          <Property Name="WAIT_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="FIX_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="TOTAL_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="REASON_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="RESPONSIBILITY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="NODE_ID" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="DESCRIPTION" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="COMMENT" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="WORK_PLAN_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="DAY" Type="Decimal" Nullable="false" Precision="18" Scale="0" />
+          <Property Name="SHIFT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="REPORT_LINE_DETAIL_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="250" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="STATUS" Type="Int16" Nullable="false" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -1954,39 +1964,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="MES_LINE_EVENT">
-            <EntityTypeMapping TypeName="DomainDbContext.MES_LINE_EVENT">
-              <MappingFragment StoreEntitySet="MES_LINE_EVENT">
-                <ScalarProperty Name="STATUS" ColumnName="STATUS" />
-                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
-                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
-                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
-                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
-                <ScalarProperty Name="SHIFT_ID" ColumnName="SHIFT_ID" />
-                <ScalarProperty Name="DAY" ColumnName="DAY" />
-                <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
-                <ScalarProperty Name="COMMENT" ColumnName="COMMENT" />
-                <ScalarProperty Name="DESCRIPTION" ColumnName="DESCRIPTION" />
-                <ScalarProperty Name="NODE_ID" ColumnName="NODE_ID" />
-                <ScalarProperty Name="RESPONSIBILITY_ID" ColumnName="RESPONSIBILITY_ID" />
-                <ScalarProperty Name="REASON_ID" ColumnName="REASON_ID" />
-                <ScalarProperty Name="TOTAL_DURATION" ColumnName="TOTAL_DURATION" />
-                <ScalarProperty Name="FIX_DURATION" ColumnName="FIX_DURATION" />
-                <ScalarProperty Name="WAIT_DURATION" ColumnName="WAIT_DURATION" />
-                <ScalarProperty Name="FINISH" ColumnName="FINISH" />
-                <ScalarProperty Name="RESPONSE" ColumnName="RESPONSE" />
-                <ScalarProperty Name="START" ColumnName="START" />
-                <ScalarProperty Name="EVENTDEF_COLOR" ColumnName="EVENTDEF_COLOR" />
-                <ScalarProperty Name="EVENTDEF_NAME_VN" ColumnName="EVENTDEF_NAME_VN" />
-                <ScalarProperty Name="EVENTDEF_NAME_EN" ColumnName="EVENTDEF_NAME_EN" />
-                <ScalarProperty Name="EVENTDEF_ID" ColumnName="EVENTDEF_ID" />
-                <ScalarProperty Name="LINE_NAME" ColumnName="LINE_NAME" />
-                <ScalarProperty Name="LINE_CODE" ColumnName="LINE_CODE" />
-                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
-                <ScalarProperty Name="EVENT_ID" ColumnName="EVENT_ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="MES_LOG_LAST_UPDATE">
             <EntityTypeMapping TypeName="DomainDbContext.MES_LOG_LAST_UPDATE">
               <MappingFragment StoreEntitySet="MES_LOG_LAST_UPDATE">
@@ -2138,62 +2115,6 @@
                 <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
                 <ScalarProperty Name="WORK_PLAN_DETAIL_ID" ColumnName="WORK_PLAN_DETAIL_ID" />
                 <ScalarProperty Name="HISTORY_ID" ColumnName="HISTORY_ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="MES_MSG_LINE">
-            <EntityTypeMapping TypeName="DomainDbContext.MES_MSG_LINE">
-              <MappingFragment StoreEntitySet="MES_MSG_LINE">
-                <ScalarProperty Name="TIME_UPDATED" ColumnName="TIME_UPDATED" />
-                <ScalarProperty Name="CURRENT_DETAIL" ColumnName="CURRENT_DETAIL" />
-                <ScalarProperty Name="OEE" ColumnName="OEE" />
-                <ScalarProperty Name="TOTAL_OEE" ColumnName="TOTAL_OEE" />
-                <ScalarProperty Name="QUALITY_RATE" ColumnName="QUALITY_RATE" />
-                <ScalarProperty Name="TOTAL_QUALITY_RATE" ColumnName="TOTAL_QUALITY_RATE" />
-                <ScalarProperty Name="TIME_RATE" ColumnName="TIME_RATE" />
-                <ScalarProperty Name="TOTAL_TIME_RATE" ColumnName="TOTAL_TIME_RATE" />
-                <ScalarProperty Name="TARGET_RATE" ColumnName="TARGET_RATE" />
-                <ScalarProperty Name="TOTAL_TARGET_RATE" ColumnName="TOTAL_TARGET_RATE" />
-                <ScalarProperty Name="PLAN_RATE" ColumnName="PLAN_RATE" />
-                <ScalarProperty Name="TOTAL_PLAN_RATE" ColumnName="TOTAL_PLAN_RATE" />
-                <ScalarProperty Name="NUMBER_OF_STOP" ColumnName="NUMBER_OF_STOP" />
-                <ScalarProperty Name="STOP_DURATION" ColumnName="STOP_DURATION" />
-                <ScalarProperty Name="TOTAL_NUMBER_OF_STOP" ColumnName="TOTAL_NUMBER_OF_STOP" />
-                <ScalarProperty Name="TOTAL_STOP_DURATION" ColumnName="TOTAL_STOP_DURATION" />
-                <ScalarProperty Name="ACTUAL_NG_QUANTITY" ColumnName="ACTUAL_NG_QUANTITY" />
-                <ScalarProperty Name="TOTAL_ACTUAL_NG_QUANTITY" ColumnName="TOTAL_ACTUAL_NG_QUANTITY" />
-                <ScalarProperty Name="ACTUAL_QUANTITY" ColumnName="ACTUAL_QUANTITY" />
-                <ScalarProperty Name="TOTAL_ACTUAL_QUANTITY" ColumnName="TOTAL_ACTUAL_QUANTITY" />
-                <ScalarProperty Name="TARGET_QUANTITY" ColumnName="TARGET_QUANTITY" />
-                <ScalarProperty Name="TOTAL_TARGET_QUANTITY" ColumnName="TOTAL_TARGET_QUANTITY" />
-                <ScalarProperty Name="PLAN_QUANTITY" ColumnName="PLAN_QUANTITY" />
-                <ScalarProperty Name="TOTAL_PLAN_QUANTITY" ColumnName="TOTAL_PLAN_QUANTITY" />
-                <ScalarProperty Name="UPPH" ColumnName="UPPH" />
-                <ScalarProperty Name="TOTAL_UPPH" ColumnName="TOTAL_UPPH" />
-                <ScalarProperty Name="UPH" ColumnName="UPH" />
-                <ScalarProperty Name="TOTAL_UPH" ColumnName="TOTAL_UPH" />
-                <ScalarProperty Name="TAKT_TIME" ColumnName="TAKT_TIME" />
-                <ScalarProperty Name="TOTAL_TAKT_TIME" ColumnName="TOTAL_TAKT_TIME" />
-                <ScalarProperty Name="HEAD_COUNT" ColumnName="HEAD_COUNT" />
-                <ScalarProperty Name="TOTAL_HEAD_COUNT" ColumnName="TOTAL_HEAD_COUNT" />
-                <ScalarProperty Name="PRODUCT_CATEGORY_NAME" ColumnName="PRODUCT_CATEGORY_NAME" />
-                <ScalarProperty Name="PRODUCT_CATEGORY_CODE" ColumnName="PRODUCT_CATEGORY_CODE" />
-                <ScalarProperty Name="PRODUCT_CATEGORY_ID" ColumnName="PRODUCT_CATEGORY_ID" />
-                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
-                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
-                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
-                <ScalarProperty Name="SHIFT_FINISH" ColumnName="SHIFT_FINISH" />
-                <ScalarProperty Name="SHIFT_START" ColumnName="SHIFT_START" />
-                <ScalarProperty Name="SHIFT_NAME" ColumnName="SHIFT_NAME" />
-                <ScalarProperty Name="SHIFT_ID" ColumnName="SHIFT_ID" />
-                <ScalarProperty Name="EVENTDEF_COLOR" ColumnName="EVENTDEF_COLOR" />
-                <ScalarProperty Name="EVENTDEF_NAME_EN" ColumnName="EVENTDEF_NAME_EN" />
-                <ScalarProperty Name="EVENTDEF_NAME_VN" ColumnName="EVENTDEF_NAME_VN" />
-                <ScalarProperty Name="EVENTDEF_ID" ColumnName="EVENTDEF_ID" />
-                <ScalarProperty Name="FACTORY_NAME" ColumnName="FACTORY_NAME" />
-                <ScalarProperty Name="FACTORY_ID" ColumnName="FACTORY_ID" />
-                <ScalarProperty Name="LINE_NAME" ColumnName="LINE_NAME" />
-                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2371,6 +2292,100 @@
                 <ScalarProperty Name="LINE_CODE" ColumnName="LINE_CODE" />
                 <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
                 <ScalarProperty Name="LINE_WORKING_ID" ColumnName="LINE_WORKING_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="MES_MSG_LINE">
+            <EntityTypeMapping TypeName="DomainDbContext.MES_MSG_LINE">
+              <MappingFragment StoreEntitySet="MES_MSG_LINE">
+                <ScalarProperty Name="TIME_UPDATED" ColumnName="TIME_UPDATED" />
+                <ScalarProperty Name="CURRENT_DETAIL" ColumnName="CURRENT_DETAIL" />
+                <ScalarProperty Name="OEE" ColumnName="OEE" />
+                <ScalarProperty Name="TOTAL_OEE" ColumnName="TOTAL_OEE" />
+                <ScalarProperty Name="QUALITY_RATE" ColumnName="QUALITY_RATE" />
+                <ScalarProperty Name="TOTAL_QUALITY_RATE" ColumnName="TOTAL_QUALITY_RATE" />
+                <ScalarProperty Name="TIME_RATE" ColumnName="TIME_RATE" />
+                <ScalarProperty Name="TOTAL_TIME_RATE" ColumnName="TOTAL_TIME_RATE" />
+                <ScalarProperty Name="TARGET_RATE" ColumnName="TARGET_RATE" />
+                <ScalarProperty Name="TOTAL_TARGET_RATE" ColumnName="TOTAL_TARGET_RATE" />
+                <ScalarProperty Name="PLAN_RATE" ColumnName="PLAN_RATE" />
+                <ScalarProperty Name="TOTAL_PLAN_RATE" ColumnName="TOTAL_PLAN_RATE" />
+                <ScalarProperty Name="NUMBER_OF_STOP" ColumnName="NUMBER_OF_STOP" />
+                <ScalarProperty Name="STOP_DURATION" ColumnName="STOP_DURATION" />
+                <ScalarProperty Name="TOTAL_NUMBER_OF_STOP" ColumnName="TOTAL_NUMBER_OF_STOP" />
+                <ScalarProperty Name="TOTAL_STOP_DURATION" ColumnName="TOTAL_STOP_DURATION" />
+                <ScalarProperty Name="ACTUAL_NG_QUANTITY" ColumnName="ACTUAL_NG_QUANTITY" />
+                <ScalarProperty Name="TOTAL_ACTUAL_NG_QUANTITY" ColumnName="TOTAL_ACTUAL_NG_QUANTITY" />
+                <ScalarProperty Name="ACTUAL_QUANTITY" ColumnName="ACTUAL_QUANTITY" />
+                <ScalarProperty Name="TOTAL_ACTUAL_QUANTITY" ColumnName="TOTAL_ACTUAL_QUANTITY" />
+                <ScalarProperty Name="TARGET_QUANTITY" ColumnName="TARGET_QUANTITY" />
+                <ScalarProperty Name="TOTAL_TARGET_QUANTITY" ColumnName="TOTAL_TARGET_QUANTITY" />
+                <ScalarProperty Name="PLAN_QUANTITY" ColumnName="PLAN_QUANTITY" />
+                <ScalarProperty Name="TOTAL_PLAN_QUANTITY" ColumnName="TOTAL_PLAN_QUANTITY" />
+                <ScalarProperty Name="UPPH" ColumnName="UPPH" />
+                <ScalarProperty Name="TOTAL_UPPH" ColumnName="TOTAL_UPPH" />
+                <ScalarProperty Name="UPH" ColumnName="UPH" />
+                <ScalarProperty Name="TOTAL_UPH" ColumnName="TOTAL_UPH" />
+                <ScalarProperty Name="TAKT_TIME" ColumnName="TAKT_TIME" />
+                <ScalarProperty Name="TOTAL_TAKT_TIME" ColumnName="TOTAL_TAKT_TIME" />
+                <ScalarProperty Name="HEAD_COUNT" ColumnName="HEAD_COUNT" />
+                <ScalarProperty Name="TOTAL_HEAD_COUNT" ColumnName="TOTAL_HEAD_COUNT" />
+                <ScalarProperty Name="PRODUCT_CATEGORY_NAME" ColumnName="PRODUCT_CATEGORY_NAME" />
+                <ScalarProperty Name="PRODUCT_CATEGORY_CODE" ColumnName="PRODUCT_CATEGORY_CODE" />
+                <ScalarProperty Name="PRODUCT_CATEGORY_ID" ColumnName="PRODUCT_CATEGORY_ID" />
+                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
+                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
+                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
+                <ScalarProperty Name="SHIFT_FINISH" ColumnName="SHIFT_FINISH" />
+                <ScalarProperty Name="SHIFT_START" ColumnName="SHIFT_START" />
+                <ScalarProperty Name="SHIFT_NAME" ColumnName="SHIFT_NAME" />
+                <ScalarProperty Name="SHIFT_ID" ColumnName="SHIFT_ID" />
+                <ScalarProperty Name="REASON_COLOR" ColumnName="REASON_COLOR" />
+                <ScalarProperty Name="REASON_NAME_EN" ColumnName="REASON_NAME_EN" />
+                <ScalarProperty Name="REASON_NAME_VN" ColumnName="REASON_NAME_VN" />
+                <ScalarProperty Name="REASON_ID" ColumnName="REASON_ID" />
+                <ScalarProperty Name="EVENTDEF_COLOR" ColumnName="EVENTDEF_COLOR" />
+                <ScalarProperty Name="EVENTDEF_NAME_EN" ColumnName="EVENTDEF_NAME_EN" />
+                <ScalarProperty Name="EVENTDEF_NAME_VN" ColumnName="EVENTDEF_NAME_VN" />
+                <ScalarProperty Name="EVENTDEF_ID" ColumnName="EVENTDEF_ID" />
+                <ScalarProperty Name="FACTORY_NAME" ColumnName="FACTORY_NAME" />
+                <ScalarProperty Name="FACTORY_ID" ColumnName="FACTORY_ID" />
+                <ScalarProperty Name="LINE_NAME" ColumnName="LINE_NAME" />
+                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="MES_LINE_EVENT">
+            <EntityTypeMapping TypeName="DomainDbContext.MES_LINE_EVENT">
+              <MappingFragment StoreEntitySet="MES_LINE_EVENT">
+                <ScalarProperty Name="STATUS" ColumnName="STATUS" />
+                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
+                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
+                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
+                <ScalarProperty Name="REPORT_LINE_DETAIL_ID" ColumnName="REPORT_LINE_DETAIL_ID" />
+                <ScalarProperty Name="SHIFT_ID" ColumnName="SHIFT_ID" />
+                <ScalarProperty Name="DAY" ColumnName="DAY" />
+                <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
+                <ScalarProperty Name="COMMENT" ColumnName="COMMENT" />
+                <ScalarProperty Name="DESCRIPTION" ColumnName="DESCRIPTION" />
+                <ScalarProperty Name="NODE_ID" ColumnName="NODE_ID" />
+                <ScalarProperty Name="RESPONSIBILITY_ID" ColumnName="RESPONSIBILITY_ID" />
+                <ScalarProperty Name="REASON_ID" ColumnName="REASON_ID" />
+                <ScalarProperty Name="TOTAL_DURATION" ColumnName="TOTAL_DURATION" />
+                <ScalarProperty Name="FIX_DURATION" ColumnName="FIX_DURATION" />
+                <ScalarProperty Name="WAIT_DURATION" ColumnName="WAIT_DURATION" />
+                <ScalarProperty Name="FINISH" ColumnName="FINISH" />
+                <ScalarProperty Name="RESPONSE" ColumnName="RESPONSE" />
+                <ScalarProperty Name="START" ColumnName="START" />
+                <ScalarProperty Name="EVENTDEF_DESCRIPTION" ColumnName="EVENTDEF_DESCRIPTION" />
+                <ScalarProperty Name="EVENTDEF_COLOR" ColumnName="EVENTDEF_COLOR" />
+                <ScalarProperty Name="EVENTDEF_NAME_VN" ColumnName="EVENTDEF_NAME_VN" />
+                <ScalarProperty Name="EVENTDEF_NAME_EN" ColumnName="EVENTDEF_NAME_EN" />
+                <ScalarProperty Name="EVENTDEF_ID" ColumnName="EVENTDEF_ID" />
+                <ScalarProperty Name="LINE_NAME" ColumnName="LINE_NAME" />
+                <ScalarProperty Name="LINE_CODE" ColumnName="LINE_CODE" />
+                <ScalarProperty Name="LINE_ID" ColumnName="LINE_ID" />
+                <ScalarProperty Name="EVENT_ID" ColumnName="EVENT_ID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

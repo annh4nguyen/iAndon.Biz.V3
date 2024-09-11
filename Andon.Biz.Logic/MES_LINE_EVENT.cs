@@ -22,6 +22,7 @@ namespace iAndon.Biz.Logic
         public string EVENTDEF_NAME_EN { get; set; }
         public string EVENTDEF_NAME_VN { get; set; }
         public string EVENTDEF_COLOR { get; set; }
+        public string EVENTDEF_DESCRIPTION { get; set; }
         public System.DateTime START { get; set; }
         public Nullable<System.DateTime> RESPONSE { get; set; }
         public Nullable<System.DateTime> FINISH { get; set; }
