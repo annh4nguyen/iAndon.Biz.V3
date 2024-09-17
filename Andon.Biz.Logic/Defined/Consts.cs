@@ -20,6 +20,7 @@ namespace iAndon.Biz.Logic
 
         public static short DRAFT_STATUS = 0;
         public static short DONE_STATUS = 3;
+        public static short TIMEOUT_STATUS = 4;
         public static short ACCEPT_STATUS = 1;
         public static short REJECT_STATUS = -1;
 

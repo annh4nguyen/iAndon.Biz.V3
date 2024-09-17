@@ -12,12 +12,14 @@ namespace iAndon.Biz.Logic
     using System;
     using System.Collections.Generic;
     
-    public partial class MES_TMP_EVENT_RAW_DATA
+    public partial class MES_RAW_UPDATE_CONFIG
     {
         public string PK_KEY { get; set; }
-        public string LINE_ID { get; set; }
-        public string EVENTDEF_ID { get; set; }
-        public string REASON_ID { get; set; }
-        public System.DateTime START_TIME { get; set; }
+        public string REPORT_LINE_DETAIL_ID { get; set; }
+        public decimal HEADCOUNT { get; set; }
+        public decimal TAKT_TIME { get; set; }
+        public string USER_ID { get; set; }
+        public System.DateTime UPDATED { get; set; }
+        public short STATUS { get; set; }
     }
 }

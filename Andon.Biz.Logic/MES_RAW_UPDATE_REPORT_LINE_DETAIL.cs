@@ -12,7 +12,7 @@ namespace iAndon.Biz.Logic
     using System;
     using System.Collections.Generic;
     
-    public partial class MES_UPDATE_REPORT_LINE_DETAIL
+    public partial class MES_RAW_UPDATE_REPORT_LINE_DETAIL
     {
         public string PK_KEY { get; set; }
         public string REPORT_LINE_DETAIL_ID { get; set; }

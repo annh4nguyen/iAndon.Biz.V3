@@ -187,6 +187,15 @@
     <Compile Include="MES_PRODUCT_CYCLE_TIME.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
+    <Compile Include="MES_RAW_UPDATE_CONFIG.cs">
+      <DependentUpon>Data.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MES_RAW_UPDATE_EVENT.cs">
+      <DependentUpon>Data.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MES_RAW_UPDATE_REPORT_LINE_DETAIL.cs">
+      <DependentUpon>Data.tt</DependentUpon>
+    </Compile>
     <Compile Include="MES_REPORT_LINE.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
@@ -194,18 +203,6 @@
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_RESPONSIBILITY.cs">
-      <DependentUpon>Data.tt</DependentUpon>
-    </Compile>
-    <Compile Include="MES_TMP_EVENT_RAW_DATA.cs">
-      <DependentUpon>Data.tt</DependentUpon>
-    </Compile>
-    <Compile Include="MES_TMP_PMS_DATA.cs">
-      <DependentUpon>Data.tt</DependentUpon>
-    </Compile>
-    <Compile Include="MES_TMP_UPDATE_CONFIG.cs">
-      <DependentUpon>Data.tt</DependentUpon>
-    </Compile>
-    <Compile Include="MES_UPDATE_REPORT_LINE_DETAIL.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_WORK_ORDER.cs">
