@@ -945,50 +945,77 @@ namespace iAndon.Biz.Logic
                             {
                                 //Update lại LOGS
                                 MES_LOG_LAST_UPDATE log_update = _dbContext.MES_LOG_LAST_UPDATE.FirstOrDefault(x=>x.LOG_ID == lastUpdate.LOG_ID);
-                                log_update.STATUS = Consts.DONE_STATUS;
-                                _dbContext.Entry(log_update).State = System.Data.Entity.EntityState.Modified;
 
-                                List< MES_REPORT_LINE_DETAIL> removedList = null;
+                                WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == lastUpdate.OBJECT_ID);
 
                                 //Nếu là xóa thì phải tìm xem thằng nào chứa nó thì xóa đi
                                 if (lastUpdate.UPDATE_EVENT == "DELETE")
                                 {
                                     _Logger.Write(_LogCategory, $"Delete WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
-
                                     //Xiên hết sạch luôn
-                                    WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == lastUpdate.OBJECT_ID);
                                     if (workPlan != null)
                                     {
-                                        if (workPlan.STATUS == (int)PLAN_STATUS.Proccessing)
+                                        bool test = RemoveWorkPlan(workPlan.LINE_ID, workPlan.WORK_PLAN_ID);
+                                        if (!test)
                                         {
-                                            //Xóa trong reportLine
-                                            removedList = RemoveWorkPlan(workPlan.LINE_ID, workPlan.WORK_PLAN_ID);
-                                            //Xoá luôn trong DB
-                                            foreach (MES_REPORT_LINE_DETAIL reportDetail in removedList)
+                                            //Trường hợp này là WorkPlan chơ lơ không thuộc LINE nào
+                                            MES_WORK_PLAN tblWorkPlan = _dbContext.MES_WORK_PLAN.FirstOrDefault(x => x.WORK_PLAN_ID == workPlan.WORK_PLAN_ID);
+                                            if (tblWorkPlan != null)
                                             {
-                                                MES_REPORT_LINE_DETAIL tblReportLineDetail = _dbContext.MES_REPORT_LINE_DETAIL.FirstOrDefault(x => x.REPORT_LINE_DETAIL_ID == reportDetail.REPORT_LINE_DETAIL_ID);
-                                                if (tblReportLineDetail != null)
-                                                {
-                                                    _dbContext.MES_REPORT_LINE_DETAIL.Remove(tblReportLineDetail);
-                                                }
+                                                _dbContext.MES_WORK_PLAN.Remove(tblWorkPlan);
                                             }
                                         }
-                                        //Xóa trong WorkPlan
-
-                                        lock (_WorkPlans)
-                                        {
-                                            _WorkPlans.Remove(workPlan);
-                                        }
+                                        //Update Log
+                                        log_update.STATUS = Consts.DONE_STATUS;
                                     }
-                                    continue;
                                 }
-
-                                //Giờ thì làm đến thằng thêm
                                 //Nếu sửa thì sao? Cũng phải update lại chứ?
-                                //Nếu là xóa thì phải tìm xem thằng nào chứa nó thì xóa đi
-                                if (true)//(lastUpdate.UPDATE_EVENT == "ADDNEW")
+                                if (lastUpdate.UPDATE_EVENT == "UPDATE")
                                 {
+                                    if (workPlan != null)
+                                    {
+                                        if (workPlan.STATUS > (int)PLAN_STATUS.Proccessing) continue;
+                                        //Lấy bản mới từ DB ra
+                                        MES_WORK_PLAN newItem = _dbContext.MES_WORK_PLAN.FirstOrDefault(x => x.WORK_PLAN_ID == lastUpdate.OBJECT_ID);
+                                        if (newItem != null)
+                                        {
+                                            //Xử lý Shift
+                                            Shift shift = CheckShift(newItem.DAY, newItem.SHIFT_ID);
+                                            WorkPlan newWorkPlan = new WorkPlan().Cast(newItem, shift);
+                                            //Đặt trạng thái cho WorkPlan --> trạng thái của WorkPlanDetail sẽ ăn theo
+                                            if (newWorkPlan.STATUS == (int)PLAN_STATUS.Draft)
+                                            {
+                                                newWorkPlan.STATUS = (int)PLAN_STATUS.NotStart;
+                                            }
+                                            //Update giá trị mới
+                                            workPlan.DAY = newWorkPlan.DAY;
+                                            workPlan.SHIFT_ID = newWorkPlan.SHIFT_ID;
+                                            workPlan.PlanStart = newWorkPlan.PlanStart;
+                                            workPlan.PlanFinish = newWorkPlan.PlanFinish;
+                                            if (workPlan.STATUS == (int)PLAN_STATUS.Proccessing)
+                                            {
+                                                Line line = _Lines.FirstOrDefault(x => x.LINE_ID == workPlan.LINE_ID);
+                                                if (line.ReportLine != null)
+                                                {
+                                                    line.ReportLine.PLAN_START = workPlan.PlanStart;
+                                                    line.ReportLine.PLAN_FINISH = workPlan.PlanFinish;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                workPlan.STATUS = newWorkPlan.STATUS;
+                                            }    
+                                        }
 
+                                        _Logger.Write(_LogCategory, $"Update WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
+
+                                        //Update Log
+                                        log_update.STATUS = Consts.DONE_STATUS;
+                                    }
+                                }
+                                //Giờ thì làm đến thằng thêm
+                                if (lastUpdate.UPDATE_EVENT == "ADDNEW")
+                                {
                                     MES_WORK_PLAN newItem = _dbContext.MES_WORK_PLAN.FirstOrDefault(x => x.WORK_PLAN_ID == lastUpdate.OBJECT_ID);
                                     if (newItem != null)
                                     {
@@ -1000,21 +1027,16 @@ namespace iAndon.Biz.Logic
                                         {
                                             newWorkPlan.STATUS = (int)PLAN_STATUS.NotStart;
                                         }
-
-                                        //Check trùng lắp
-                                        WorkPlan _check = _WorkPlans.FirstOrDefault(wp => wp.WORK_PLAN_ID == newWorkPlan.WORK_PLAN_ID);
-                                        if (_check != null)
-                                        {
-                                            _WorkPlans.Remove(_check);
-                                            _Logger.Write(_LogCategory, $"Update WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
-                                        }
-                                        else
-                                        {
-                                            _Logger.Write(_LogCategory, $"Addnew WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
-                                        }
+                                        _Logger.Write(_LogCategory, $"Addnew WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
                                         _WorkPlans.Add(newWorkPlan);
+
+                                        //Update Log
+                                        log_update.STATUS = Consts.DONE_STATUS;
                                     }
                                 }
+
+                                _dbContext.Entry(log_update).State = System.Data.Entity.EntityState.Modified;
+
                             }
                         }
                         #endregion
@@ -1044,7 +1066,7 @@ namespace iAndon.Biz.Logic
                                     //Nếu là xóa hoặc update thì phải tìm xem thằng nào chi tiết xóa đi trước 
                                     if (lastUpdate.UPDATE_EVENT == "DELETE" || lastUpdate.UPDATE_EVENT == "UPDATE")
                                     {
-                                        _Logger.Write(_LogCategory, $"Delete WorkPlanDetail: [{oldItem.PLAN_START:HH:mm} - {oldItem.PLAN_FINISH:HH:mm}] - Product [{oldItem.PRODUCT_CODE}] - Quantity [{oldItem.PLAN_QUANTITY}] at Line {oldItem.LINE_ID}", LogType.Info);
+                                        _Logger.Write(_LogCategory, $"Remove for [{lastUpdate.UPDATE_EVENT}] WorkPlanDetail: [{oldItem.PLAN_START:HH:mm} - {oldItem.PLAN_FINISH:HH:mm}] - Product [{oldItem.PRODUCT_CODE}] - Quantity [{oldItem.PLAN_QUANTITY}] at Line {oldItem.LINE_ID}", LogType.Info);
                                         //Xiên hết sạch luôn
                                         WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == oldItem.WORK_PLAN_ID);
                                         if (workPlan != null)
@@ -1058,7 +1080,16 @@ namespace iAndon.Biz.Logic
                                         }
                                         //Sau đó remove đi --> Đánh dấu xóa
                                         //workPlan.WorkPlanDetails.Remove(oldItem);
-                                        oldItem.STATUS = (short)PLAN_STATUS.Ready2Cancel;
+                                        //Chỉ đánh dấu xóa trường hợp nó bị xóa. Trường hợp Update thì chỉ sửa lại
+                                        if (lastUpdate.UPDATE_EVENT == "DELETE")
+                                        {
+                                            oldItem.STATUS = (short)PLAN_STATUS.Ready2Cancel;
+                                        }
+                                        else
+                                        {
+                                            //Trường hợp này thì remove đi khỏi cái cũ để thay vào cái mới
+                                            workPlan.WorkPlanDetails.Remove(oldItem);
+                                        }
                                     }
                                 }
 
@@ -1069,10 +1100,12 @@ namespace iAndon.Biz.Logic
 
                                 if (lastUpdate.UPDATE_EVENT != "DELETE")
                                 {
-                                    List<MES_WORK_PLAN_DETAIL_HISTORY> _historyList = _dbContext.MES_WORK_PLAN_DETAIL_HISTORY.Where(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID && x.UPDATED > lastTime).ToList();
+                                    List<MES_WORK_PLAN_DETAIL_HISTORY> _historyList = _dbContext.MES_WORK_PLAN_DETAIL_HISTORY.Where(x => x.WORK_PLAN_DETAIL_ID == lastUpdate.OBJECT_ID).ToList();
+
                                     MES_WORK_PLAN_DETAIL_HISTORY _history = null;
                                     if (_historyList.Count > 0)
                                     {
+                                        _historyList = _historyList.OrderBy(x => x.UPDATED).ToList();
                                         _history = _historyList.LastOrDefault();
                                     }
                                     if (_history != null)
@@ -1109,9 +1142,6 @@ namespace iAndon.Biz.Logic
                                                 {
                                                     workPlan.STATUS = (byte)PLAN_STATUS.NotStart;
                                                 }
-
-                                                workPlan.WorkPlanDetails.Add(newItem);
-
                                                 _WorkPlans.Add(workPlan);
                                             }
 
@@ -2409,6 +2439,9 @@ namespace iAndon.Biz.Logic
 
                     decimal _startQuantity = linePMS.actualquantity; // - 1;
 
+                    DateTime _startTime = _lastProductionTime.AddSeconds(0 - (double)_productCycleTime);
+                    if (_startTime < workPlan.PlanStart) { _startTime = workPlan.PlanStart; }
+
                     MES_WORK_PLAN_DETAIL newWorkPlanDetail = new MES_WORK_PLAN_DETAIL()
                     {
                         WORK_PLAN_DETAIL_ID = GenID(),
@@ -2416,7 +2449,7 @@ namespace iAndon.Biz.Logic
                         LINE_ID = line.LINE_ID,
                         DAY = workPlan.DAY,
                         SHIFT_ID = workPlan.SHIFT_ID,
-                        PLAN_START = _lastProductionTime.AddSeconds(0 - (double)_productCycleTime), //Lấy thời gian hoàn thành Trừ cái đầu tiên
+                        PLAN_START = _startTime, //Lấy thời gian hoàn thành Trừ cái đầu tiên
                         PLAN_FINISH = workPlan.PlanFinish,
                         WORK_ORDER_CODE = linePMS.ponumber.ToString(),
                         WORK_ORDER_PLAN_CODE = linePMS.planid.ToString(),
@@ -3285,8 +3318,8 @@ namespace iAndon.Biz.Logic
                                 update.ACTUAL_NG_QUANTITY = temp.NGQuantity;
                                 //if (update.ACTUAL_QUANTITY > update.PLAN_QUANTITY) update.ACTUAL_QUANTITY = update.PLAN_QUANTITY;
                                 //if (update.ACTUAL_NG_QUANTITY > update.PLAN_QUANTITY) update.ACTUAL_NG_QUANTITY = update.PLAN_QUANTITY;
+                                _Logger.Write(_LogCategory, $"Moving actual value: Line {line.LINE_CODE} - WorkPlanDetail: {workPlanDetail.WORK_PLAN_DETAIL_ID} - Time: {temp.TimeName} - Product {workPlanDetail.PRODUCT_CODE} - Quantity: {temp.ActualQuantity} - NG: {temp.NGQuantity}", LogType.Debug);
                             }
-
                         }
                         //Chuyển xong thì xóa đi
                         TempActual.RemoveAll(x => x.WorkPlanDetailId == workPlanDetail.WORK_PLAN_DETAIL_ID);
@@ -3443,7 +3476,7 @@ namespace iAndon.Biz.Logic
                     removed.STATUS = (int)PLAN_STATUS.Ready2Cancel; //Đặt đây để xóa đi
                     _planIndex = removed.DETAIL_INDEX;
 
-                    if (UpdateType == "UPDATE")
+                    if (UpdateType.Trim().ToUpper() == "UPDATE")
                     {
                         //Lưu tạm giá trị Actual để chuyển qua cái mới
                         ProductionTemp _temp = new ProductionTemp();
@@ -3495,28 +3528,64 @@ namespace iAndon.Biz.Logic
             }
             return ret;
         }
-        private List<MES_REPORT_LINE_DETAIL> RemoveWorkPlan(string LineId, string workPlanId)
+        //private List<MES_REPORT_LINE_DETAIL> RemoveWorkPlan(string LineId, string workPlanId)
+        //{
+        //    try
+        //    {
+        //        Line line = _Lines.FirstOrDefault(l => l.LINE_ID == LineId);
+        //        DateTime eventTime = DateTime.Now;
+
+        //        _Logger.Write(_LogCategory, $"Remove WorkPlan: Line {line.LINE_ID} - WorkPlan: {workPlanId} - Total Report Details: {line.ReportLineDetails.Count}", LogType.Debug);
+
+        //        //Loại bỏ những thằng thuộc WorkPlanDetail này
+        //        List<MES_REPORT_LINE_DETAIL> removedList = line.ReportLineDetails.Where(x => x.WORK_PLAN_ID== workPlanId).ToList();
+        //        line.ReportLineDetails.RemoveAll(x => x.WORK_PLAN_ID == workPlanId);
+
+        //        line.WorkPlan = null;
+
+        //        return removedList;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _Logger.Write(_LogCategory, $"Remote All WorkPlan [{workPlanId}] - Line [{LineId}] Error: {ex}", LogType.Error);
+        //    }
+        //    return null;
+        //}
+
+        private bool RemoveWorkPlan(string LineId, string workPlanId)
         {
             try
             {
                 Line line = _Lines.FirstOrDefault(l => l.LINE_ID == LineId);
+                WorkPlan workPlan = _WorkPlans.FirstOrDefault(x => x.WORK_PLAN_ID == workPlanId);
                 DateTime eventTime = DateTime.Now;
+                if (workPlan == null) return true;
+                if (line == null) return false; //Để xóa WorkPlan trong DB khỏi bị tồn rác
+                
+                //Đã hoàn thành hoặc quá hạn thì bỏ qua, không cho phép xóa nữa
+                if (workPlan.STATUS > (short)PLAN_STATUS.Proccessing) return true;
 
-                _Logger.Write(_LogCategory, $"Remove WorkPlan: Line {line.LINE_ID} - WorkPlan: {workPlanId} - Total Report Details: {line.ReportLineDetails.Count}", LogType.Debug);
-
-                //Loại bỏ những thằng thuộc WorkPlanDetail này
-                List<MES_REPORT_LINE_DETAIL> removedList = line.ReportLineDetails.Where(x => x.WORK_PLAN_ID== workPlanId).ToList();
-                line.ReportLineDetails.RemoveAll(x => x.WORK_PLAN_ID == workPlanId);
-
-                line.WorkPlan = null;
-
-                return removedList;
+                if (workPlan.STATUS == (short)PLAN_STATUS.Proccessing)
+                {
+                    _Logger.Write(_LogCategory, $"Remove WorkPlan: Line {line.LINE_ID} - WorkPlan: {workPlanId} - Total Report Details: {line.ReportLineDetails.Count}", LogType.Debug);
+                    //Loại bỏ những thằng thuộc WorkPlanDetail này
+                    List<MES_REPORT_LINE_DETAIL> removedList = line.ReportLineDetails.Where(x => x.WORK_PLAN_ID == workPlanId).ToList();
+                    foreach (MES_REPORT_LINE_DETAIL removed in removedList)
+                    {
+                        removed.STATUS = (short)PLAN_STATUS.Ready2Cancel;
+                    }
+                    if (line.ReportLine != null)
+                    {
+                        line.ReportLine.STATUS = (short)PLAN_STATUS.Ready2Cancel;
+                    }
+                }
+                workPlan.STATUS = (short)PLAN_STATUS.Ready2Cancel;
             }
             catch (Exception ex)
             {
                 _Logger.Write(_LogCategory, $"Remote All WorkPlan [{workPlanId}] - Line [{LineId}] Error: {ex}", LogType.Error);
             }
-            return null;
+            return true;
         }
         private void FinishReportLineDetail(string LineId, string ReportDetailId, DateTime eventTime, string newEventDefId = "0")
         {
@@ -3712,6 +3781,8 @@ namespace iAndon.Biz.Logic
                                 }
                                 else
                                 {
+                                    tblWorkPlan.DAY = line.WorkPlan.DAY;
+                                    tblWorkPlan.SHIFT_ID = line.WorkPlan.SHIFT_ID;
                                     tblWorkPlan.STATUS = line.WorkPlan.STATUS;
                                     _dbContext.Entry(tblWorkPlan).State = System.Data.Entity.EntityState.Modified;
                                 }
@@ -4105,6 +4176,7 @@ namespace iAndon.Biz.Logic
                             if (workPlan.STATUS == (int)PLAN_STATUS.Ready2Cancel)
                             {
                                 _dbContext.MES_WORK_PLAN.Remove(updateWorkPlan);
+                                workPlan.Priority = 1; //Để xóa
                             }
                             else
                             {
@@ -4118,14 +4190,13 @@ namespace iAndon.Biz.Logic
                         foreach (MES_WORK_PLAN_DETAIL tblWorkPlanDetail in workPlan.WorkPlanDetails)
                         {
                             //_Logger.Write(_LogCategory, $"Process Data: Save WorkPlanDetail {tblWorkPlanDetail.WORK_PLAN_DETAIL_ID} - Status {tblWorkPlanDetail.STATUS}", LogType.Debug);
-                            tblWorkPlanDetail.STATUS = workPlan.STATUS;
                             MES_WORK_PLAN_DETAIL updateWorkPlanDetail = _dbContext.MES_WORK_PLAN_DETAIL.FirstOrDefault(wp => wp.WORK_PLAN_DETAIL_ID == tblWorkPlanDetail.WORK_PLAN_DETAIL_ID);
 
                             if (updateWorkPlanDetail == null)
                             {
                                 if (tblWorkPlanDetail.STATUS != (int)PLAN_STATUS.Ready2Cancel)
                                 {
-                                    _dbContext.MES_WORK_PLAN_DETAIL.Add(updateWorkPlanDetail);
+                                    _dbContext.MES_WORK_PLAN_DETAIL.Add(tblWorkPlanDetail);
                                 }
                             }
                             else
@@ -4137,8 +4208,26 @@ namespace iAndon.Biz.Logic
                                 }
                                 else
                                 {
+                                    tblWorkPlanDetail.STATUS = workPlan.STATUS;
                                     //_Logger.Write(_LogCategory, $"Save WorkPlan {workPlan.Id} with Status {workPlan.Status}", LogType.Debug);
                                     updateWorkPlanDetail.STATUS = tblWorkPlanDetail.STATUS;
+                                    updateWorkPlanDetail.STATUS = tblWorkPlanDetail.STATUS;
+                                    updateWorkPlanDetail.PLAN_START = tblWorkPlanDetail.PLAN_START;
+                                    updateWorkPlanDetail.PLAN_FINISH = tblWorkPlanDetail.PLAN_FINISH;
+                                    updateWorkPlanDetail.PO_CODE = tblWorkPlanDetail.PO_CODE;
+                                    updateWorkPlanDetail.WORK_ORDER_PLAN_CODE = tblWorkPlanDetail.WORK_ORDER_PLAN_CODE;
+                                    updateWorkPlanDetail.WORK_ORDER_CODE = tblWorkPlanDetail.WORK_ORDER_CODE;
+                                    updateWorkPlanDetail.LINE_ID = tblWorkPlanDetail.LINE_ID;
+                                    updateWorkPlanDetail.DAY = tblWorkPlanDetail.DAY;
+                                    updateWorkPlanDetail.PRODUCT_ID = tblWorkPlanDetail.PRODUCT_ID;
+                                    updateWorkPlanDetail.PRODUCT_CODE = tblWorkPlanDetail.PRODUCT_CODE;
+                                    updateWorkPlanDetail.CONFIG_ID = tblWorkPlanDetail.CONFIG_ID;
+                                    updateWorkPlanDetail.STATION_QUANTITY = tblWorkPlanDetail.STATION_QUANTITY;
+                                    updateWorkPlanDetail.BATCH = tblWorkPlanDetail.BATCH;
+                                    updateWorkPlanDetail.TAKT_TIME = tblWorkPlanDetail.TAKT_TIME;
+                                    updateWorkPlanDetail.PLAN_QUANTITY = tblWorkPlanDetail.PLAN_QUANTITY;
+                                    updateWorkPlanDetail.HEAD_COUNT = tblWorkPlanDetail.HEAD_COUNT;
+                                    updateWorkPlanDetail.DESCRIPTION = tblWorkPlanDetail.DESCRIPTION;
                                     _dbContext.Entry(updateWorkPlanDetail).State = System.Data.Entity.EntityState.Modified;
                                 }
                             }
@@ -5932,12 +6021,12 @@ namespace iAndon.Biz.Logic
 
                                     if (reportLineDetail != null)
                                     {
-                                        if (reportLineDetail.PLAN_START < eventTime)
+                                        if (reportLineDetail.PLAN_START <= lineDetail.UPDATED)
                                         {
                                             //Lấy 2 giá trị mới nhập
                                             reportLineDetail.ACTUAL_QUANTITY += lineDetail.ACTUAL_QUANTITY;
                                             reportLineDetail.ACTUAL_NG_QUANTITY += lineDetail.ACTUAL_NG_QUANTITY;
-                                            _Logger.Write(_LogCategory, $"Add production: Time [{reportLineDetail.TIME_NAME}] - Product [{reportLineDetail.PRODUCT_CODE}] - Actual [{lineDetail.ACTUAL_QUANTITY}] - NG [{lineDetail.ACTUAL_NG_QUANTITY}]", LogType.Debug);
+                                            _Logger.Write(_LogCategory, $"Add production: Line [{reportLineDetail.LINE_ID}] - Time [{reportLineDetail.TIME_NAME}] - Product [{reportLineDetail.PRODUCT_CODE}] - Actual [{lineDetail.ACTUAL_QUANTITY}] - NG [{lineDetail.ACTUAL_NG_QUANTITY}]", LogType.Debug);
 
                                             //Chỉ những thằng nào đã chạy thì mới làm
                                             //if (lineDetail.Status == 1)
@@ -5949,15 +6038,14 @@ namespace iAndon.Biz.Logic
                                             //    //Uncheck thì lại mở ra
                                             //    reportLineDetail.Status = (byte)PlanStatus.Proccessing;
                                             //}
+
+                                            //Update lại LOGS
+                                            MES_RAW_UPDATE_REPORT_LINE_DETAIL log_update = _dbContext.MES_RAW_UPDATE_REPORT_LINE_DETAIL.FirstOrDefault(x => x.PK_KEY == lineDetail.PK_KEY);
+                                            log_update.STATUS = Consts.DONE_STATUS;
+                                            _dbContext.Entry(log_update).State = System.Data.Entity.EntityState.Modified;
+                                            actualRawDatas.Remove(lineDetail);
                                         }
                                     }
-                                    //Update lại LOGS
-                                    MES_RAW_UPDATE_REPORT_LINE_DETAIL log_update = _dbContext.MES_RAW_UPDATE_REPORT_LINE_DETAIL.FirstOrDefault(x => x.PK_KEY == lineDetail.PK_KEY);
-                                    log_update.STATUS = Consts.DONE_STATUS;
-                                    _dbContext.Entry(log_update).State = System.Data.Entity.EntityState.Modified;
-
-                                    actualRawDatas.Remove(lineDetail);
-
                                 }
                             }
                         }
