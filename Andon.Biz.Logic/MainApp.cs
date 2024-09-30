@@ -66,13 +66,17 @@ namespace iAndon.Biz.Logic
 
         private bool _ProductionInBreak = (int.Parse(ConfigurationManager.AppSettings["production_in_break"]) == 1);
         private bool _CalculateByPerformance = (int.Parse(ConfigurationManager.AppSettings["calculate_by_performance"]) == 1);
+        private bool _RunningByPerformance = (int.Parse(ConfigurationManager.AppSettings["running_by_performance"]) == 1);
+
         private bool _AutoSplitWorkPlan2Time = (int.Parse(ConfigurationManager.AppSettings["auto_split_workplan_detail"]) == 1);
         private bool _AutoAddWorkPlan = (int.Parse(ConfigurationManager.AppSettings["auto_add_workplan"]) == 1);
+        private bool _UsePlanHourInWorkPlan = (int.Parse(ConfigurationManager.AppSettings["use_plan_hour_in_workplan"]) == 1);
         private bool _UseProductConfig = (int.Parse(ConfigurationManager.AppSettings["use_product_config"]) == 1);
         private bool _UseResponeTime = (int.Parse(ConfigurationManager.AppSettings["use_response_event"]) == 1);
         private bool _AddEventUntilFinish = (int.Parse(ConfigurationManager.AppSettings["add_event_until_finish"]) == 1);
-        private bool _AddStopToWorking = (int.Parse(ConfigurationManager.AppSettings["add_stop_to_working"]) == 1);
+        private bool _AddStopReasonToWorking = (int.Parse(ConfigurationManager.AppSettings["add_stop_reason_to_working"]) == 1);
         private bool _AutoUpdateBackEvent = (int.Parse(ConfigurationManager.AppSettings["auto_update_back_event"]) == 1);
+        
 
         private bool _IsPerformanceByDetail = (int.Parse(ConfigurationManager.AppSettings["performance_by_detail"]) == 1);
         private bool _IsPerformanceByProduct = (int.Parse(ConfigurationManager.AppSettings["performance_by_product"]) == 1);
@@ -94,7 +98,7 @@ namespace iAndon.Biz.Logic
 
         private bool _isProcessSync = (int.Parse(ConfigurationManager.AppSettings["is_process_sync"]) == 1);
         private int _SyncInterval = int.Parse(ConfigurationManager.AppSettings["sync_interval"]);
-        private string _Sync_Url = ConfigurationManager.AppSettings["sync_url"];
+        //private string _Sync_Url = ConfigurationManager.AppSettings["sync_url"];
 
         private int _HourForNewDay = int.Parse(ConfigurationManager.AppSettings["hour_for_new_day"]);
 
@@ -1486,15 +1490,18 @@ namespace iAndon.Biz.Logic
                             //Tính thời gian dịch chuyển
                             if (line.WorkPlan != null)
                             {
-                                double _duration = (eventTime - line.Changed).TotalSeconds;
-                                if (_duration > _AutoSwitchWorkPlanInterval)
+                                if (_AutoSwitchWorkPlanInterval > 0)
                                 {
-                                    line.CurrentDetail++;
-                                    if (line.CurrentDetail > line.WorkPlan.WorkPlanDetails.Count)
+                                    double _duration = (eventTime - line.Changed).TotalSeconds;
+                                    if (_duration > _AutoSwitchWorkPlanInterval)
                                     {
-                                        line.CurrentDetail = 1;
+                                        line.CurrentDetail++;
+                                        if (line.CurrentDetail > line.WorkPlan.WorkPlanDetails.Count)
+                                        {
+                                            line.CurrentDetail = 1;
+                                        }
+                                        line.Changed = eventTime;
                                     }
-                                    line.Changed = eventTime;
                                 }
                             }
                             else
@@ -1562,6 +1569,7 @@ namespace iAndon.Biz.Logic
                                     _stopDuration = productDetails.Sum(x => x.STOP_DURATION);
                                     _numberOfStop =  (short)productDetails.Sum(x => x.NUMBER_OF_STOP);
                                     decimal _working_duration = productDetails.Sum(x => x.ACTUAL_DURATION); 
+
                                     if (_planQuantity > 0)
                                     {
                                         _planRate = Math.Round(100 * _actualQuantity / _planQuantity, 0);
@@ -1571,25 +1579,29 @@ namespace iAndon.Biz.Logic
                                     productDetails = productDetails.Where(x => x.STATUS >= (int)PLAN_STATUS.Proccessing).ToList();
                                     if (productDetails.Count > 0)
                                     {
-                                        _targetRate = Math.Round(productDetails.Average(x => x.TARGET_RATE), 0);
-                                        if (_runningTaktTime > 0)
-                                        {
-                                            _targetQuantity = Math.Round(_working_duration / _runningTaktTime, 0);
-                                            _uph = Math.Round(3600 / _runningTaktTime, 0);
-                                        }
-                                        if (_runningHeadCount > 0)
-                                        {
-                                            _upph = Math.Round(_uph / _runningHeadCount, 0);
-                                        }
-                                        if (_actualQuantity > 0)
-                                        {
-                                            _targetRate = Math.Round(100 * _targetQuantity / _actualQuantity, 0);
-                                        }
+                                        _targetRate = Math.Round(productDetails.Average(x => x.RUNNING_TARGET_RATE), 0);
+                                        _targetQuantity = Math.Round(productDetails.Average(x => x.RUNNING_TARGET_QUANTITY), 0);
+                                        _uph = Math.Round(productDetails.Average(x => x.RUNNING_UPH), 0);
+                                        _upph = Math.Round(productDetails.Average(x => x.RUNNING_UPPH), 0);
+
+                                        //if (_runningTaktTime > 0)
+                                        //{
+                                        //    _targetQuantity = Math.Round(_working_duration / _runningTaktTime, 0);
+                                        //    _uph = Math.Round(3600 / _runningTaktTime, 0);
+                                        //}
+                                        //if (_runningHeadCount > 0)
+                                        //{
+                                        //    _upph = Math.Round(_uph / _runningHeadCount, 0);
+                                        //}
+                                        //if (_actualQuantity > 0)
+                                        //{
+                                        //    _targetRate = Math.Round(100 * _targetQuantity / _actualQuantity, 0);
+                                        //}
 
                                         _timeRate = Math.Round(productDetails.Average(x => x.TIME_RATE), 0);
                                         _qualityRate = Math.Round(productDetails.Average(x => x.QUALITY_RATE), 0);
                                     }
-                                    _oee = Math.Round(100*(_planRate * _timeRate * _qualityRate) / (100*100*100), 0);
+                                    _oee = Math.Round(100*(_targetRate * _timeRate * _qualityRate) / (100*100*100), 0);
                                 }
                             }
                             else
@@ -1599,15 +1611,15 @@ namespace iAndon.Biz.Logic
                                     _runningHeadCount = detail.RUNNING_HEAD_COUNT;
                                     _runningTaktTime = detail.RUNNING_TAKT_TIME;
                                     _planQuantity = detail.PLAN_QUANTITY;
-                                    _targetQuantity = detail.TARGET_QUANTITY;
+                                    _targetQuantity = detail.RUNNING_TARGET_QUANTITY;
                                     _actualQuantity = detail.ACTUAL_QUANTITY;
                                     _ngQuantity = detail.ACTUAL_NG_QUANTITY;
                                     _stopDuration = detail.STOP_DURATION;
                                     _numberOfStop = detail.NUMBER_OF_STOP;
-                                    _uph = detail.ACTUAL_UPH;
-                                    _upph = detail.ACTUAL_UPPH;
+                                    _uph = detail.RUNNING_UPH;
+                                    _upph = detail.RUNNING_UPPH;
                                     _planRate = Math.Round(detail.PLAN_RATE, 0);
-                                    _targetRate = Math.Round(detail.TARGET_RATE, 0);
+                                    _targetRate = Math.Round(detail.RUNNING_TARGET_RATE, 0);
                                     _timeRate = Math.Round(detail.TIME_RATE, 0);
                                     _qualityRate = Math.Round(detail.QUALITY_RATE, 0);
                                     _oee = Math.Round(detail.OEE, 0);
@@ -1650,35 +1662,37 @@ namespace iAndon.Biz.Logic
                                     PRODUCT_CATEGORY_CODE = _productCategoryCode,
                                     PRODUCT_CATEGORY_NAME = _productCategoryName,
 
-                                    TOTAL_HEAD_COUNT = total_runningHeadCount,
                                     HEAD_COUNT = _runningHeadCount,
                                     TOTAL_TAKT_TIME = total_runningTaktTime,
                                     TAKT_TIME = _runningTaktTime,
-                                    TOTAL_PLAN_QUANTITY = total_planQuantity,
                                     PLAN_QUANTITY = _planQuantity,
-                                    TOTAL_TARGET_QUANTITY = total_targetQuantity,
                                     TARGET_QUANTITY = _targetQuantity,
-                                    TOTAL_ACTUAL_QUANTITY = total_actualQuantity,
                                     ACTUAL_QUANTITY = _actualQuantity,
-                                    TOTAL_ACTUAL_NG_QUANTITY = total_ngQuantity,
                                     ACTUAL_NG_QUANTITY = _ngQuantity,
-                                    TOTAL_STOP_DURATION = total_stopDuration,
-                                    TOTAL_NUMBER_OF_STOP = total_numberOfStop,
                                     STOP_DURATION = _stopDuration,
                                     NUMBER_OF_STOP = _numberOfStop,
-                                    TOTAL_UPH = total_uph,
+
                                     UPH = _uph,
-                                    TOTAL_UPPH = total_upph,
                                     UPPH = _upph,
                                     PLAN_RATE = _planRate,
-                                    TOTAL_PLAN_RATE = total_planRate,
                                     TARGET_RATE = _targetRate,
-                                    TOTAL_TARGET_RATE = total_targetRate,
                                     TIME_RATE = _timeRate,
-                                    TOTAL_TIME_RATE = total_timeRate,
                                     QUALITY_RATE = _qualityRate,
-                                    TOTAL_QUALITY_RATE = total_qualityRate,
                                     OEE = _oee,
+
+                                    TOTAL_HEAD_COUNT = total_runningHeadCount,
+                                    TOTAL_UPH = total_uph,
+                                    TOTAL_UPPH = total_upph,
+                                    TOTAL_STOP_DURATION = total_stopDuration,
+                                    TOTAL_PLAN_QUANTITY = total_planQuantity,
+                                    TOTAL_TARGET_QUANTITY = total_targetQuantity,
+                                    TOTAL_ACTUAL_QUANTITY = total_actualQuantity,
+                                    TOTAL_ACTUAL_NG_QUANTITY = total_ngQuantity,
+                                    TOTAL_NUMBER_OF_STOP = total_numberOfStop,
+                                    TOTAL_PLAN_RATE = total_planRate,
+                                    TOTAL_TARGET_RATE = total_targetRate,
+                                    TOTAL_TIME_RATE = total_timeRate,
+                                    TOTAL_QUALITY_RATE = total_qualityRate,
                                     TOTAL_OEE = total_oee,
 
                                     CURRENT_DETAIL = line.CurrentDetail,
@@ -1704,36 +1718,36 @@ namespace iAndon.Biz.Logic
                                 msgLine.PRODUCT_CATEGORY_CODE = _productCategoryCode;
                                 msgLine.PRODUCT_CATEGORY_NAME = _productCategoryName;
 
-                                msgLine.TOTAL_HEAD_COUNT = total_runningHeadCount;
                                 msgLine.HEAD_COUNT = _runningHeadCount;
-                                msgLine.TOTAL_TAKT_TIME = total_runningTaktTime;
                                 msgLine.TAKT_TIME = _runningTaktTime;
-                                msgLine.TOTAL_PLAN_QUANTITY = total_planQuantity;
                                 msgLine.PLAN_QUANTITY = _planQuantity;
-                                msgLine.TOTAL_TARGET_QUANTITY = total_targetQuantity;
                                 msgLine.TARGET_QUANTITY = _targetQuantity;
-                                msgLine.TOTAL_ACTUAL_QUANTITY = total_actualQuantity;
                                 msgLine.ACTUAL_QUANTITY = _actualQuantity;
-                                msgLine.TOTAL_ACTUAL_NG_QUANTITY = total_ngQuantity;
                                 msgLine.ACTUAL_NG_QUANTITY = _ngQuantity;
-                                msgLine.TOTAL_STOP_DURATION = total_stopDuration;
-                                msgLine.TOTAL_NUMBER_OF_STOP = total_numberOfStop;
                                 msgLine.STOP_DURATION = _stopDuration;
                                 msgLine.NUMBER_OF_STOP = _numberOfStop;
-                                msgLine.TOTAL_UPH = total_uph;
                                 msgLine.UPH = _uph;
-                                msgLine.TOTAL_UPPH = total_upph;
                                 msgLine.UPPH = _upph;
-                                msgLine.TOTAL_PLAN_RATE = total_planRate;
                                 msgLine.PLAN_RATE = _planRate;
-                                msgLine.TOTAL_TARGET_RATE = total_targetRate;
                                 msgLine.TARGET_RATE = _targetRate;
-                                msgLine.TOTAL_TIME_RATE = total_timeRate;
                                 msgLine.TIME_RATE = _timeRate;
-                                msgLine.TOTAL_QUALITY_RATE = total_qualityRate;
                                 msgLine.QUALITY_RATE = _qualityRate;
-                                msgLine.TOTAL_OEE = total_oee;
                                 msgLine.OEE = _oee;
+                                msgLine.TOTAL_HEAD_COUNT = total_runningHeadCount;
+                                msgLine.TOTAL_TAKT_TIME = total_runningTaktTime;
+                                msgLine.TOTAL_PLAN_QUANTITY = total_planQuantity;
+                                msgLine.TOTAL_TARGET_QUANTITY = total_targetQuantity;
+                                msgLine.TOTAL_ACTUAL_QUANTITY = total_actualQuantity;
+                                msgLine.TOTAL_ACTUAL_NG_QUANTITY = total_ngQuantity;
+                                msgLine.TOTAL_STOP_DURATION = total_stopDuration;
+                                msgLine.TOTAL_NUMBER_OF_STOP = total_numberOfStop;
+                                msgLine.TOTAL_UPH = total_uph;
+                                msgLine.TOTAL_UPPH = total_upph;
+                                msgLine.TOTAL_PLAN_RATE = total_planRate;
+                                msgLine.TOTAL_TARGET_RATE = total_targetRate;
+                                msgLine.TOTAL_TIME_RATE = total_timeRate;
+                                msgLine.TOTAL_QUALITY_RATE = total_qualityRate;
+                                msgLine.TOTAL_OEE = total_oee;
                                 msgLine.CURRENT_DETAIL = line.CurrentDetail;
                                 msgLine.TIME_UPDATED = eventTime;
                                 _dbContext.Entry(msgLine).State = System.Data.Entity.EntityState.Modified;
@@ -1812,7 +1826,7 @@ namespace iAndon.Biz.Logic
                                 }
 
 
-                                if (_AddStopToWorking)
+                                if (_AddStopReasonToWorking)
                                 {
                                     MES_MSG_LINE_WORKING msgLineWorking = _dbContext.MES_MSG_LINE_WORKING.FirstOrDefault(x => x.ID == lineStop.EVENTDEF_ID && x.REASON_ID == lineStop.REASON_ID);
                                     
@@ -2427,6 +2441,7 @@ namespace iAndon.Biz.Logic
 
                     string _productId = "", _productCode = linePMS.productcode;
                     decimal _productCycleTime = _DefaultCycleTime;
+                    decimal _productRouting = 0;
                     int _productHeadCount = _DefaultHeadCount;
 
                     DM_MES_PRODUCT _product = _Products.FirstOrDefault(x => x.PRODUCT_CODE == _productCode);
@@ -2435,6 +2450,7 @@ namespace iAndon.Biz.Logic
                         _productId = _product.PRODUCT_ID;
                         _productCycleTime = _product.CYCLE_TIME;
                         _productHeadCount = _product.HEADCOUNT;
+                        _productRouting = _product.ROUTING;
                     }
 
                     decimal _startQuantity = linePMS.actualquantity; // - 1;
@@ -2458,6 +2474,7 @@ namespace iAndon.Biz.Logic
                         PRODUCT_CODE = _productCode,
                         CONFIG_ID = "",
                         TAKT_TIME = _productCycleTime,
+                        ROUTING = _productRouting,
                         STATION_QUANTITY = 1,
                         BATCH = 1,
                         HEAD_COUNT = (short)_productHeadCount,
@@ -2804,9 +2821,11 @@ namespace iAndon.Biz.Logic
                             {
                                 detail.PLAN_UPPH = Math.Round(detail.PLAN_UPH / detail.PLAN_HEAD_COUNT, 2);
                             }
-                            decimal _takttime = detail.RUNNING_TAKT_TIME;
+                            decimal _takttime = detail.PLAN_TAKT_TIME, _runningTakttime = detail.RUNNING_TAKT_TIME;
                             if (_takttime <= 0) _takttime = detail.PLAN_TAKT_TIME;
                             if (_takttime <= 0) _takttime = _DefaultCycleTime;
+
+                            if (_runningTakttime <= 0) _runningTakttime = _takttime;
 
                             detail.PLAN_DURATION = _detailDuration;
                             detail.BREAK_DURATION = _breakDurationDetail;
@@ -2820,7 +2839,23 @@ namespace iAndon.Biz.Logic
                             if (detail.ACTUAL_DURATION != 0)
                             {
                                 detail.TARGET_QUANTITY = Math.Floor((detail.ACTUAL_DURATION / _takttime) * detail.BATCH * detail.STATION_QUANTITY); //Nếu làm nhiều máy hoặc 1 lần ra nhiều hàng
+                                detail.RUNNING_TARGET_QUANTITY = Math.Floor((detail.ACTUAL_DURATION / _runningTakttime) * detail.BATCH * detail.STATION_QUANTITY); //Nếu làm nhiều máy hoặc 1 lần ra nhiều hàng
                             }
+
+                            //RUNNING
+                            detail.RUNNING_TARGET_RATE = 0;
+                            if (detail.RUNNING_TARGET_QUANTITY != 0)
+                            {
+                                detail.RUNNING_TARGET_RATE = Math.Round(100 * detail.ACTUAL_QUANTITY / detail.RUNNING_TARGET_QUANTITY, 1);
+                            }
+                            detail.RUNNING_UPH = Math.Round(3600 / _runningTakttime, 2);
+
+                            if (detail.RUNNING_HEAD_COUNT != 0)
+                            {
+                                detail.RUNNING_UPPH = Math.Round(detail.RUNNING_UPH / detail.RUNNING_HEAD_COUNT, 2);
+                            }
+
+                            //ACTUAL
                             detail.PLAN_RATE = 0;
                             if (detail.PLAN_QUANTITY != 0)
                             {
@@ -2831,6 +2866,7 @@ namespace iAndon.Biz.Logic
                             {
                                 detail.TARGET_RATE = Math.Round(100 * detail.ACTUAL_QUANTITY / detail.TARGET_QUANTITY, 1);
                             }
+
                             detail.QUALITY_RATE = 100;
                             if (detail.ACTUAL_QUANTITY != 0)
                             {
@@ -2854,8 +2890,11 @@ namespace iAndon.Biz.Logic
                             }
 
                             detail.OEE = Math.Round(100*(detail.TIME_RATE * detail.TARGET_RATE * detail.QUALITY_RATE)/(100*100*100), 1);
-
                             detail.RESULT = CalculateResult(detail.STATUS);
+
+                            //2024-09-27
+                            //Bổ sung thêm phần Routing
+                            detail.ACTUAL_ROUTING = 0;
                         }
                     }
                 }
@@ -3122,6 +3161,16 @@ namespace iAndon.Biz.Logic
                 DateTime _startWorkPlanDetail = workPlanDetail.PLAN_START; //line.WorkPlan.PlanStart; 
                 DateTime _finishWorkPlanDetail = workPlanDetail.PLAN_FINISH; //line.WorkPlan.PlanFinish; 
                 decimal _planDuration = (decimal)(line.WorkPlan.PlanFinish - line.WorkPlan.PlanStart).TotalSeconds;
+
+                if (_UsePlanHourInWorkPlan)
+                {
+                    _startWorkPlanDetail = workPlan.PlanStart;
+                    _startWorkPlanDetail = workPlan.PlanFinish;
+                    _planDuration = 60 * 60 * workPlan.PLAN_HOUR;
+                }
+
+                //Điều chỉnh tăng lại phần đã trừ khi tính kế hoạch - BỎ QUA
+
                 decimal _planBreakDuration = GetBreakDuration(line.LINE_ID, line.WorkPlan.PlanStart, line.WorkPlan.PlanFinish);
                 //Vào 1 WorkPlanDetail thì phải check ReportLine ngay
                 if (line.ReportLine == null)
@@ -3142,7 +3191,11 @@ namespace iAndon.Biz.Logic
                         STARTED = line.WorkPlan.PlanStart, //workPlanDetail.PLAN_START,
                         FINISHED = eventTime,
                         PLAN_TAKT_TIME = 0,
+                        PLAN_ROUTING = 0,
+                        PLAN_HEAD_COUNT = 0,
                         PLAN_UPH = 0,
+                        PLAN_UPPH = 0,
+
                         ACTUAL_DURATION = 0,
                         ACTUAL_BREAK_DURATION = 0,
                         ACTUAL_STOP_DURATION = 0,
@@ -3151,14 +3204,19 @@ namespace iAndon.Biz.Logic
                         TARGET_QUANTITY = 0,
                         ACTUAL_QUANTITY = 0,
                         ACTUAL_NG_QUANTITY = 0,
+
+                        ACTUAL_TAKT_TIME = 0,
+                        ACTUAL_UPH = 0,
+                        ACTUAL_UPPH = 0,
+                        ACTUAL_HEAD_COUNT = 0,
+                        ACTUAL_ROUTING = 0,
+
                         PLAN_RATE = 0,
                         TARGET_RATE = 0,
                         TIME_RATE = 0,
                         QUALITY_RATE = 0,
                         OEE = 0,
-                        ACTUAL_TAKT_TIME = 0,
-                        ACTUAL_UPH = 0,
-                        RESULT= "",
+                        RESULT = "",
                         STATUS = (int)PLAN_STATUS.Proccessing, //Tạo ra vỏ này là cho chạy luôn
                     };
 
@@ -3189,8 +3247,17 @@ namespace iAndon.Biz.Logic
                 }
                 if (workPlanDetail.TAKT_TIME > 0) { _taktTime = workPlanDetail.TAKT_TIME; }
 
-                decimal _taktTimeRunning = Math.Round(_taktTime * _performance,2);
+                //Tính toán Running Takttime và Actual Takttime
 
+                decimal _planTaktTime = _taktTime, _runningTaktTime = _taktTime;
+                if (_CalculateByPerformance)
+                {
+                    _planTaktTime = Math.Round(_taktTime * _performance, 2);
+                }
+                if (_RunningByPerformance)
+                {
+                    _runningTaktTime = Math.Round(_taktTime * _performance, 2);
+                }
                 //Fix trường hợp có tính START_AT
                 if (workPlanDetail.START_AT == 0) { workPlanDetail.START_AT = 1; }
 
@@ -3240,13 +3307,20 @@ namespace iAndon.Biz.Logic
                                 BATCH = workPlanDetail.BATCH,
                                 CONFIG_ID = workPlanDetail.CONFIG_ID,
                                 CONFIG_NAME = _ProductConfigName,
-                                PLAN_TAKT_TIME = _taktTime, //workPlanDetail.TAKT_TIME,
+                                PLAN_TAKT_TIME = _planTaktTime, //workPlanDetail.TAKT_TIME,
                                 PLAN_UPH = 0,
                                 PLAN_UPPH = 0,
                                 PLAN_HEAD_COUNT = workPlanDetail.HEAD_COUNT,
+                                PLAN_ROUTING = workPlanDetail.ROUTING,
+                                TOTAL_PLAN_QUANTITY = workPlanDetail.PLAN_QUANTITY,
+
                                 //Running
-                                RUNNING_TAKT_TIME = _taktTimeRunning, //workPlanDetail.TAKT_TIME,
+                                RUNNING_TAKT_TIME = _runningTaktTime, //workPlanDetail.TAKT_TIME,
                                 RUNNING_HEAD_COUNT = workPlanDetail.HEAD_COUNT,
+                                RUNNING_TARGET_QUANTITY = 0,
+                                RUNNING_UPH = 0,
+                                RUNNING_UPPH = 0,
+                                RUNNING_TARGET_RATE = 0,
 
                                 PLAN_DURATION = _detailDuration,
                                 PLAN_QUANTITY = 0,
@@ -3255,6 +3329,7 @@ namespace iAndon.Biz.Logic
                                 STOP_DURATION = 0,
                                 NUMBER_OF_STOP = 0,
                                 ACTUAL_TAKT_TIME = _taktTime, //workPlanDetail.TAKT_TIME,
+                                ACTUAL_ROUTING = workPlanDetail.ROUTING,
                                 TARGET_QUANTITY = 0,
                                 ACTUAL_QUANTITY = 0,
                                 ACTUAL_NG_QUANTITY = 0,
@@ -3389,22 +3464,29 @@ namespace iAndon.Biz.Logic
                         BATCH = workPlanDetail.BATCH,
                         CONFIG_ID = workPlanDetail.CONFIG_ID,
                         CONFIG_NAME = _ProductConfigName,
-                        PLAN_TAKT_TIME = _taktTime, //workPlanDetail.TAKT_TIME,
+                        PLAN_TAKT_TIME = _planTaktTime, //workPlanDetail.TAKT_TIME,
                         PLAN_UPH = 0,
                         PLAN_UPPH = 0,
                         PLAN_HEAD_COUNT = workPlanDetail.HEAD_COUNT,
+                        PLAN_ROUTING = workPlanDetail.ROUTING,
+                        TOTAL_PLAN_QUANTITY = workPlanDetail.PLAN_QUANTITY,
+
                         //Running
-                        RUNNING_TAKT_TIME = _taktTimeRunning, //workPlanDetail.TAKT_TIME,
+                        RUNNING_TAKT_TIME = _runningTaktTime, //workPlanDetail.TAKT_TIME,
                         RUNNING_HEAD_COUNT = workPlanDetail.HEAD_COUNT,
+                        RUNNING_TARGET_QUANTITY = 0,
+                        RUNNING_UPH = 0,
+                        RUNNING_UPPH = 0,
+                        RUNNING_TARGET_RATE = 0,
 
                         PLAN_DURATION = _planDuration,
-                        TOTAL_PLAN_QUANTITY = workPlanDetail.PLAN_QUANTITY,
                         PLAN_QUANTITY = _planQuantity,
                         ACTUAL_DURATION = 0,
                         BREAK_DURATION = 0,
                         STOP_DURATION = 0,
                         NUMBER_OF_STOP = 0,
                         ACTUAL_TAKT_TIME = _taktTime, //workPlanDetail.TAKT_TIME,
+                        ACTUAL_ROUTING = workPlanDetail.ROUTING,
                         TARGET_QUANTITY = 0,
                         ACTUAL_QUANTITY = _actualQuantity,
                         ACTUAL_NG_QUANTITY = 0,
@@ -3737,6 +3819,7 @@ namespace iAndon.Biz.Logic
                 STATION_QUANTITY = history.STATION_QUANTITY,
                 BATCH = history.BATCH,
                 TAKT_TIME = history.TAKT_TIME,
+                ROUTING = history.ROUTING,
                 PLAN_QUANTITY = history.PLAN_QUANTITY,
                 HEAD_COUNT = history.HEAD_COUNT,
                 DESCRIPTION = history.DESCRIPTION
@@ -4812,6 +4895,13 @@ namespace iAndon.Biz.Logic
                     //Tính toán lại cho thằng ReportLine
                     DateTime _startDetail = lstReportLineDetails.Min(x => (DateTime)x.PLAN_START);
                     DateTime _finishDetail = lstReportLineDetails.Max(x => (DateTime)x.PLAN_FINISH);
+                    decimal _duration = (decimal)(_finishDetail - _startDetail).TotalSeconds;
+                    if (_UsePlanHourInWorkPlan)
+                    {
+                        _startDetail = workPlan.PlanStart;
+                        _finishDetail = workPlan.PlanFinish;
+                        _duration = 60 * 60 * workPlan.PLAN_HOUR;
+                    }
 
                     line.ReportLine.PLAN_START = _startDetail;
                     line.ReportLine.PLAN_FINISH = _finishDetail;
@@ -4822,8 +4912,7 @@ namespace iAndon.Biz.Logic
                     line.ReportLine.PLAN_QUANTITY = lstReportLineDetails.Sum(x => x.PLAN_QUANTITY);
                     line.ReportLine.PLAN_TAKT_TIME = Math.Round(lstReportLineDetails.Average(x => x.PLAN_TAKT_TIME), 2);
                     line.ReportLine.PLAN_UPH = Math.Round(lstReportLineDetails.Average(x => x.PLAN_UPH), 2);
-
-                    line.ReportLine.PLAN_TOTAL_DURATION = (decimal)((DateTime)line.ReportLine.PLAN_FINISH - (DateTime)line.ReportLine.PLAN_START).TotalSeconds;
+                    line.ReportLine.PLAN_TOTAL_DURATION = _duration;
                     line.ReportLine.PLAN_BREAK_DURATION = GetBreakDuration(line.LINE_ID, line.ReportLine.PLAN_START, line.ReportLine.PLAN_FINISH);
                     line.ReportLine.PLAN_WORKING_DURATION = line.ReportLine.PLAN_TOTAL_DURATION - line.ReportLine.PLAN_BREAK_DURATION;
 
@@ -6506,6 +6595,7 @@ namespace iAndon.Biz.Logic
 
 
         #region Customer_Ariston
+        /*
         private PMSData GetPMSInfo(string CODE)
         {
 
@@ -6550,7 +6640,7 @@ namespace iAndon.Biz.Logic
             }
             return null;
         }
-
+        */
         #endregion
     }
 }

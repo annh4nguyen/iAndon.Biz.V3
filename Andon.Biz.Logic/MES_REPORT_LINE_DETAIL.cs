@@ -39,12 +39,16 @@ namespace iAndon.Biz.Logic
         public decimal PLAN_UPPH { get; set; }
         public short PLAN_HEAD_COUNT { get; set; }
         public decimal PLAN_DURATION { get; set; }
-        public decimal RUNNING_TAKT_TIME { get; set; }
-        public short RUNNING_HEAD_COUNT { get; set; }
         public decimal TOTAL_PLAN_QUANTITY { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
         public System.DateTime STARTED { get; set; }
         public System.DateTime FINISHED { get; set; }
+        public decimal RUNNING_TAKT_TIME { get; set; }
+        public short RUNNING_HEAD_COUNT { get; set; }
+        public decimal RUNNING_UPH { get; set; }
+        public decimal RUNNING_UPPH { get; set; }
+        public decimal RUNNING_TARGET_QUANTITY { get; set; }
+        public decimal RUNNING_TARGET_RATE { get; set; }
         public decimal ACTUAL_DURATION { get; set; }
         public decimal BREAK_DURATION { get; set; }
         public decimal STOP_DURATION { get; set; }
@@ -58,6 +62,8 @@ namespace iAndon.Biz.Logic
         public decimal ACTUAL_UPH { get; set; }
         public decimal ACTUAL_UPPH { get; set; }
         public short ACTUAL_HEAD_COUNT { get; set; }
+        public decimal PLAN_ROUTING { get; set; }
+        public decimal ACTUAL_ROUTING { get; set; }
         public decimal PLAN_RATE { get; set; }
         public decimal TARGET_RATE { get; set; }
         public decimal TIME_RATE { get; set; }

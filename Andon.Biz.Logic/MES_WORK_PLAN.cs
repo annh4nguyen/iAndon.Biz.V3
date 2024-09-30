@@ -18,7 +18,8 @@ namespace iAndon.Biz.Logic
         public string LINE_ID { get; set; }
         public decimal DAY { get; set; }
         public string SHIFT_ID { get; set; }
-        public short STATUS { get; set; }
+        public decimal PLAN_HOUR { get; set; }
         public string WORKING_ID { get; set; }
+        public short STATUS { get; set; }
     }
 }

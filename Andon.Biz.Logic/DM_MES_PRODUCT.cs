@@ -25,6 +25,7 @@ namespace iAndon.Biz.Logic
         public decimal CALCULATED_CYCLE_TIME { get; set; }
         public decimal PERFORMANCE { get; set; }
         public int HEADCOUNT { get; set; }
+        public decimal ROUTING { get; set; }
         public bool ACTIVE { get; set; }
     }
 }

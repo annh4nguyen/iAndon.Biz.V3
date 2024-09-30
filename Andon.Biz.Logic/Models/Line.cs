@@ -33,7 +33,7 @@ namespace iAndon.Biz.Logic.Models
         public string ReasonColor { get; set; }
         public string LastReasonId { get; set; }
 
-        public int CurrentDetail { get; set; }
+        public short CurrentDetail { get; set; }
         public DateTime Changed { get; set; }
 
         public Line Cast(DM_MES_LINE tblLine)

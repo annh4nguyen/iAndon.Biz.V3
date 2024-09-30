@@ -43,6 +43,8 @@ namespace iAndon.Biz.Logic
         public short ACTUAL_HEAD_COUNT { get; set; }
         public decimal ACTUAL_UPH { get; set; }
         public decimal ACTUAL_UPPH { get; set; }
+        public decimal PLAN_ROUTING { get; set; }
+        public decimal ACTUAL_ROUTING { get; set; }
         public decimal PLAN_RATE { get; set; }
         public decimal TARGET_RATE { get; set; }
         public decimal TIME_RATE { get; set; }

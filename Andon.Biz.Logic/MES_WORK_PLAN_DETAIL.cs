@@ -28,6 +28,7 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_CODE { get; set; }
         public string CONFIG_ID { get; set; }
         public decimal TAKT_TIME { get; set; }
+        public decimal ROUTING { get; set; }
         public short STATION_QUANTITY { get; set; }
         public short BATCH { get; set; }
         public short HEAD_COUNT { get; set; }

@@ -4,15 +4,13 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="d4e244563d6540569f06ce5f8a119ba2" Name="Diagram1" ZoomLevel="52">
-        <EntityTypeShape EntityType="DomainDbContext.DG_DM_SHIFT" Width="1.5" PointX="0.75" PointY="0.75" />
+      <Diagram DiagramId="d4e244563d6540569f06ce5f8a119ba2" Name="Diagram1" ZoomLevel="63">
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_BREAK_TIME" Width="1.5" PointX="2.75" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_CONFIGURATION" Width="1.5" PointX="4.75" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_EVENTDEF" Width="1.5" PointX="0.75" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_LINE" Width="1.5" PointX="2.75" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_NODE" Width="1.5" PointX="4.75" PointY="3.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_NODE_TYPE" Width="1.5" PointX="6.75" PointY="0.75" />
-        <EntityTypeShape EntityType="DomainDbContext.DM_MES_PRODUCT" Width="1.5" PointX="6.75" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_PRODUCT_CATEGORY" Width="1.5" PointX="8.75" PointY="0.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_PRODUCT_CONFIG" Width="1.5" PointX="8.75" PointY="3.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_ZONE" Width="1.5" PointX="8.75" PointY="6.75" />
@@ -26,23 +24,25 @@
         <EntityTypeShape EntityType="DomainDbContext.DM_FACTORY" Width="1.5" PointX="11.375" PointY="17.75" />
         <EntityTypeShape EntityType="DomainDbContext.DM_MES_STOP_REASON" Width="1.5" PointX="19.375" PointY="19.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LOG_LAST_UPDATE" Width="1.5" PointX="3.375" PointY="20.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_DETAIL" Width="1.5" PointX="21.375" PointY="0.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_PRODUCT" Width="1.5" PointX="21.375" PointY="7.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_ORDER" Width="1.5" PointX="2.75" PointY="15.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN" Width="1.5" PointX="7.75" PointY="15.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" Width="1.5" PointX="7.75" PointY="18.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" Width="1.5" PointX="9.75" PointY="21.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE" Width="1.5" PointX="0.75" PointY="19.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" Width="1.5" PointX="12.75" PointY="21.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_STOP" Width="1.5" PointX="11.375" PointY="0.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_WORKING" Width="1.5" PointX="11.375" PointY="4.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_STOP" Width="1.5" PointX="0.75" PointY="9.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_WORKING" Width="1.5" PointX="2.75" PointY="9.75" />
-        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE" Width="1.5" PointX="15.375" PointY="14.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_LINE_EVENT" Width="1.5" PointX="21.375" PointY="13.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_RAW_UPDATE_CONFIG" Width="1.5" PointX="5.375" PointY="9.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_RAW_UPDATE_EVENT" Width="1.5" PointX="17.375" PointY="4.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_RAW_UPDATE_REPORT_LINE_DETAIL" Width="1.5" PointX="17.375" PointY="8.75" />
+        <EntityTypeShape EntityType="DomainDbContext.DM_MES_PRODUCT" Width="1.5" PointX="5.75" PointY="13.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN" Width="1.5" PointX="17.75" PointY="13.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE" Width="1.5" PointX="0.75" PointY="19.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" Width="1.5" PointX="10.375" PointY="21.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE" Width="1.5" PointX="13.375" PointY="16.75" />
+        <EntityTypeShape EntityType="DomainDbContext.DG_DM_SHIFT" Width="1.5" PointX="0.75" PointY="9.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_STOP" Width="1.5" PointX="2.75" PointY="9.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_WORKING" Width="1.5" PointX="11.75" PointY="0.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_DETAIL" Width="1.5" PointX="15.75" PointY="17.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_PRODUCT" Width="1.5" PointX="8.75" PointY="15.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_STOP" Width="1.5" PointX="5.75" PointY="18.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_MSG_LINE_WORKING" Width="1.5" PointX="19.75" PointY="0.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" Width="1.5" PointX="19.75" PointY="4.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" Width="1.5" PointX="21.75" PointY="0.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

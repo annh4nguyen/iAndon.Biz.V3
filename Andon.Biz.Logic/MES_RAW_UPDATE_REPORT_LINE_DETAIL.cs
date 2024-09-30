@@ -28,5 +28,6 @@ namespace iAndon.Biz.Logic
         public short STATUS { get; set; }
         public string USER_ID { get; set; }
         public System.DateTime UPDATED { get; set; }
+        public string PRODUCT_CODE { get; set; }
     }
 }
