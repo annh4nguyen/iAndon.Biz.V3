@@ -39,6 +39,7 @@ namespace iAndon.MSG
                 planquantity = bodyMessage.planquantity,
                 actualquantity = bodyMessage.actualquantity,
                 status = bodyMessage.status,
+                lastproductionbarcode = bodyMessage.lastproductionbarcode,
                 lastproductiontime = bodyMessage.lastproductiontime
             };
         }
@@ -99,6 +100,7 @@ namespace iAndon.MSG
         public int planquantity { get; set; }
         public int actualquantity { get; set; }
         public string status { get; set; }
+        public string lastproductionbarcode { get; set; }
         public string lastproductiontime { get; set; }
     }
 

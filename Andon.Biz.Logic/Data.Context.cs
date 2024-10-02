@@ -49,10 +49,6 @@ namespace iAndon.Biz.Logic
         public virtual DbSet<MES_RAW_UPDATE_CONFIG> MES_RAW_UPDATE_CONFIG { get; set; }
         public virtual DbSet<MES_RAW_UPDATE_EVENT> MES_RAW_UPDATE_EVENT { get; set; }
         public virtual DbSet<MES_RAW_UPDATE_REPORT_LINE_DETAIL> MES_RAW_UPDATE_REPORT_LINE_DETAIL { get; set; }
-        public virtual DbSet<DM_MES_PRODUCT> DM_MES_PRODUCT { get; set; }
-        public virtual DbSet<MES_WORK_PLAN> MES_WORK_PLAN { get; set; }
-        public virtual DbSet<MES_REPORT_LINE> MES_REPORT_LINE { get; set; }
-        public virtual DbSet<MES_REPORT_LINE_DETAIL> MES_REPORT_LINE_DETAIL { get; set; }
         public virtual DbSet<MES_MSG_LINE> MES_MSG_LINE { get; set; }
         public virtual DbSet<DG_DM_SHIFT> DG_DM_SHIFT { get; set; }
         public virtual DbSet<MES_LINE_STOP> MES_LINE_STOP { get; set; }
@@ -61,7 +57,11 @@ namespace iAndon.Biz.Logic
         public virtual DbSet<MES_MSG_LINE_PRODUCT> MES_MSG_LINE_PRODUCT { get; set; }
         public virtual DbSet<MES_MSG_LINE_STOP> MES_MSG_LINE_STOP { get; set; }
         public virtual DbSet<MES_MSG_LINE_WORKING> MES_MSG_LINE_WORKING { get; set; }
-        public virtual DbSet<MES_WORK_PLAN_DETAIL> MES_WORK_PLAN_DETAIL { get; set; }
         public virtual DbSet<MES_WORK_PLAN_DETAIL_HISTORY> MES_WORK_PLAN_DETAIL_HISTORY { get; set; }
+        public virtual DbSet<MES_WORK_PLAN> MES_WORK_PLAN { get; set; }
+        public virtual DbSet<DM_MES_PRODUCT> DM_MES_PRODUCT { get; set; }
+        public virtual DbSet<MES_REPORT_LINE> MES_REPORT_LINE { get; set; }
+        public virtual DbSet<MES_REPORT_LINE_DETAIL> MES_REPORT_LINE_DETAIL { get; set; }
+        public virtual DbSet<MES_WORK_PLAN_DETAIL> MES_WORK_PLAN_DETAIL { get; set; }
     }
 }

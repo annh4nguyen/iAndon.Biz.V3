@@ -17,6 +17,7 @@ namespace iAndon.Biz.Logic
         public string WORK_PLAN_ID { get; set; }
         public string LINE_ID { get; set; }
         public decimal DAY { get; set; }
+        public System.DateTime PLAN_DATE { get; set; }
         public string SHIFT_ID { get; set; }
         public decimal PLAN_HOUR { get; set; }
         public string WORKING_ID { get; set; }

@@ -20,9 +20,11 @@ namespace iAndon.Biz.Logic.Models
             WorkPlan workPlan = new WorkPlan()
             {
                 WORK_PLAN_ID = _tblWorkPlan.WORK_PLAN_ID,
-                DAY = _tblWorkPlan.DAY,
                 LINE_ID = _tblWorkPlan.LINE_ID,
+                DAY = _tblWorkPlan.DAY,
+                PLAN_DATE = _tblWorkPlan.PLAN_DATE,
                 SHIFT_ID = _tblWorkPlan.SHIFT_ID,
+                PLAN_HOUR = _tblWorkPlan.PLAN_HOUR,
                 STATUS = _tblWorkPlan.STATUS,
             };
             return workPlan;
@@ -32,9 +34,11 @@ namespace iAndon.Biz.Logic.Models
             WorkPlan workPlan = new WorkPlan()
             {
                 WORK_PLAN_ID = _tblWorkPlan.WORK_PLAN_ID,
-                DAY = _tblWorkPlan.DAY,
                 LINE_ID = _tblWorkPlan.LINE_ID,
+                DAY = _tblWorkPlan.DAY,
+                PLAN_DATE = _tblWorkPlan.PLAN_DATE,
                 SHIFT_ID = _tblWorkPlan.SHIFT_ID,
+                PLAN_HOUR = _tblWorkPlan.PLAN_HOUR,
                 STATUS = _tblWorkPlan.STATUS,
             };
 
@@ -49,9 +53,11 @@ namespace iAndon.Biz.Logic.Models
             MES_WORK_PLAN tblWorkPlan = new MES_WORK_PLAN()
             {
                 WORK_PLAN_ID = this.WORK_PLAN_ID,
-                DAY = this.DAY,
                 LINE_ID = this.LINE_ID,
+                DAY = this.DAY,
+                PLAN_DATE = this.PLAN_DATE,
                 SHIFT_ID = this.SHIFT_ID,
+                PLAN_HOUR = this.PLAN_HOUR,
                 STATUS = this.STATUS,
             };
             return tblWorkPlan;

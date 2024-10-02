@@ -36,6 +36,10 @@ namespace iAndon.Biz.Logic
         public static string Production_Delayed = "Delayed";
         public static string Production_Stop = "Stopped";
 
+        public static string PMS_RUNNING = "RUNNING";
+        public static string PMS_STOPPED = "STOP";
+
+
         //====================================================
         //EVENT_DEF
         public static string EVENTDEF_RUNNING = "1";
@@ -47,6 +51,11 @@ namespace iAndon.Biz.Logic
         public static string EVENTDEF_DEFAULT_NAME_EN = "REMAINED";
         public static string EVENTDEF_DEFAULT_NAME_VN = "Còn lại";
         public static string EVENTDEF_DEFAULT_COLOR = "#FFF";
+
+        public static string EVENTDEF_PLAN = "0";
+        public static string EVENTDEF_PLAN_NAME_EN = "PLAN";
+        public static string EVENTDEF_PLAN_NAME_VN = "Kế hoạch";
+        public static string EVENTDEF_PLAN_COLOR = "#FFF";
         //====================================================
 
 
