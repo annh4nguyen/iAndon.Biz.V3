@@ -861,14 +861,13 @@ namespace iAndon.Biz.Logic
             {
 
                 //PreProcessMessage();
-                _Logger.Write(_LogCategory, $"Message {JsonConvert.SerializeObject(message)}", LogType.Debug);
+                //_Logger.Write(_LogCategory, $"Message {JsonConvert.SerializeObject(message)}", LogType.Debug);
 
                 //Chỗ này check hơi hài nhưng không hiểu sao lại bị lỗi
                 if (message == null) return;
-
-                _Logger.Write(_LogCategory, $"Gateway: {message.Header.From}", LogType.Debug);
+                //_Logger.Write(_LogCategory, $"Gateway: {message.Header.From}", LogType.Debug);
                 Line line = _Lines.FirstOrDefault(l => l.GATEWAY_ID == message.Header.From);
-                _Logger.Write(_LogCategory, $"Line match with Gateway: {line.LINE_ID}", LogType.Debug);
+                //_Logger.Write(_LogCategory, $"Line match with Gateway: {line.LINE_ID}", LogType.Debug);
                 //Kiểm tra các điều kiện thỏa mãn cho chạy
                 if (line == null) return;
                 if (line.EventDefId == Consts.EVENTDEF_NOPLAN) return; //Không có kế hoạch thì bỏ qua
@@ -889,7 +888,7 @@ namespace iAndon.Biz.Logic
 
                 string _deviceId = message.Body.DeviceId;
                 Node _node = line.Nodes.FirstOrDefault(x => x.DEVICE_ID == _deviceId);
-                _Logger.Write(_LogCategory, $"Node: {JsonConvert.SerializeObject(_node)} - Device: {_deviceId}", LogType.Debug);
+                //_Logger.Write(_LogCategory, $"Node: {JsonConvert.SerializeObject(_node)} - Device: {_deviceId}", LogType.Debug);
 
                 if (_node == null) return;
                 List<DM_MES_EVENTDEF> lstEventDefs = _EventDefs.OrderByDescending(x => x.NUMBER_ORDER).ToList(); //Sắp xếp ngược lại, ưu tiên từ cao xuống thấp
@@ -908,7 +907,7 @@ namespace iAndon.Biz.Logic
                     bool test = Convert.ToBoolean(dataTable.Compute(formula, ""));
                     if (test)
                     {
-                        _Logger.Write(_LogCategory, $"Test Node Event for {_node.NODE_ID}: Event {eventDef.EVENTDEF_ID}", LogType.Debug);
+                        //_Logger.Write(_LogCategory, $"Test Node Event for {_node.NODE_ID}: Event {eventDef.EVENTDEF_ID}", LogType.Debug);
                         ChangeNodeEvent(line.LINE_ID, _node.NODE_ID, msgTime, eventDef.EVENTDEF_ID);
                         break; //Ưu tiên, gặp thằng nào thì dừng luôn
                     }
@@ -4529,7 +4528,7 @@ namespace iAndon.Biz.Logic
                             oldEvent.WAIT_DURATION = (decimal)((DateTime)oldEvent.RESPONSE - oldEvent.START).TotalSeconds;
                             oldEvent.FIX_DURATION = (decimal)((DateTime)oldEvent.FINISH - (DateTime)oldEvent.RESPONSE).TotalSeconds;
                         }
-                        _Logger.Write(_LogCategory, $"Finish Line {LineId} - Finish Event [{oldEvent.EVENTDEF_ID}] - {oldEvent.FINISH}", LogType.Debug);
+                        _Logger.Write(_LogCategory, $"Finish Event at Line [{LineId}] - Finish Event [{oldEvent.EVENTDEF_ID}] - [{oldEvent.FINISH:yyyy-MM-dd HH:mm:ss}]", LogType.Info);
                     }
                 }
 
@@ -4562,7 +4561,7 @@ namespace iAndon.Biz.Logic
                     line.ReasonName_VN = reasonNameVN;
                     line.ReasonColor = reasonColor;
 
-                    _Logger.Write(_LogCategory, $"New Event at Line {line.LINE_CODE} - Event: {line.EventDefId} - Time: {eventTime:yyyy-MM-dd HH:mm:ss}", LogType.Debug);
+                    _Logger.Write(_LogCategory, $"New Event at Line [{line.LINE_CODE}] - Event: [{line.EventDefId}] - Time: [{eventTime:yyyy-MM-dd HH:mm:ss}]", LogType.Info);
 
                     string _detailId = "", _productId = "", _productCode = "", _productName = "";
 
@@ -4722,17 +4721,14 @@ namespace iAndon.Biz.Logic
                             oldEvent.WAIT_DURATION = (decimal)((DateTime)oldEvent.RESPONSE - oldEvent.START).TotalSeconds;
                             oldEvent.FIX_DURATION = (decimal)((DateTime)oldEvent.FINISH - (DateTime)oldEvent.RESPONSE).TotalSeconds;
                         }
-                        _Logger.Write(_LogCategory, $"Node {NodeId} - Finish Event {oldEvent.EVENT_ID} - {oldEvent.FINISH}", LogType.Debug);
+                        _Logger.Write(_LogCategory, $"Node [{NodeId}] - Finish Event [{oldEvent.EVENTDEF_ID}] - {oldEvent.FINISH:yyyy-MM-dd HH:mm:ss}", LogType.Info);
                     }
                 }
 
                 if (isAddNewEvent)
                 {
-                    _Logger.Write(_LogCategory, $"Process Add Event for Node {node.NODE_ID} - Current Event: {oldEventId} - Time: {eventTime:yyyy-MM-dd HH:mm:ss}", LogType.Debug);
-
+                    _Logger.Write(_LogCategory, $"New Event at Node [{NodeId}] - Event: [{newEventDefId}] - Time: {eventTime:yyyy-MM-dd HH:mm:ss}", LogType.Info);
                     //Thêm cái mới
-
-                    _Logger.Write(_LogCategory, $"New Event at Node {NodeId} - Event: {line.EventDefId}", LogType.Debug);
 
                     string _detailId = "", _productId = "", _productCode = "", _productName = "";
 
