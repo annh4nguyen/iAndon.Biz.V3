@@ -1029,7 +1029,6 @@ namespace iAndon.Biz.Logic
                                                 workPlan.STATUS = newWorkPlan.STATUS;
                                             }    
                                         }
-
                                         _Logger.Write(_LogCategory, $"Update WorkPlan ID = [{lastUpdate.OBJECT_ID}]", LogType.Info);
 
                                         //Update Log
