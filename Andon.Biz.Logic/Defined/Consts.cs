@@ -38,7 +38,7 @@ namespace iAndon.Biz.Logic
 
         public static string PMS_RUNNING = "RUNNING";
         public static string PMS_STOPPED = "STOP";
-
+        public static string PMS_COMPLETED = "COMPLETED";
 
         //====================================================
         //EVENT_DEF
