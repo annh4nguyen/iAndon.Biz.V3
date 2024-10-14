@@ -72,7 +72,7 @@ namespace iAndon.Biz.Logic
 
         public static short HOUR_FOR_NEW_DAY = 6;
 
-        public static short VERIFY_EVENT = 30; //30 giây
+        public static short DIFFERENCE_PRODUCTION_QUANTITY = 2; //30 giây
 
         public static short BUFFER_TIME_IN_MINUTE = 0;
         public static short BUFFER_TIME_IN_SECOND = 1;
