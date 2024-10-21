@@ -2391,7 +2391,7 @@ namespace iAndon.Biz.Logic
                     //if (_lastProductionTime < eventTime.AddSeconds(0 - _FixTimeProduction)) continue;
 
                     //Tìm ra line
-                    Line line = _Lines.FirstOrDefault(x => x.LINE_ID == _lineId);
+                    Line line = _Lines.FirstOrDefault(x => x.LINE_CODE == _lineId);
                     if (line == null) continue;
                     if (!line.ACTIVE) continue;
                     //2024-07-15: Bổ sung logic không có WorkPlan thì cũng bỏ qua
@@ -2408,11 +2408,13 @@ namespace iAndon.Biz.Logic
                         if (line.WorkPlan.STATUS == (int)PLAN_STATUS.Proccessing)
                         {
                             bool test = false;
+
+                            //Tìm reportLineDetail đang chạy
                             MES_REPORT_LINE_DETAIL detail = line.ReportLineDetails.FirstOrDefault(x => x.STATUS == (int)PLAN_STATUS.Proccessing);
 
                             if (detail != null)
                             {
-                                //Nếu có trong listDetail rồi thì thêm vào
+                                //Nếu có thằng trong listDetail đang chạy rồi thì thêm vào
                                 if (detail.WORK_ORDER_CODE == linePMS.ponumber.ToString() && detail.WORK_ORDER_PLAN_CODE == linePMS.planid.ToString())
                                 {
 
@@ -2424,6 +2426,8 @@ namespace iAndon.Biz.Logic
                                     //    FinishReportLineDetail(line.LINE_ID, detail.REPORT_LINE_DETAIL_ID, eventTime, Consts.EVENTDEF_NOPLAN);
                                     //}
 
+                                    test = true;
+
                                     //Đúng rồi thằng đang chạy rồi, thêm vào thôi. 
                                     //Kiểm tra xem số lượng có khác không thì mới thêm vào
                                     decimal _actual = linePMS.actualquantity;
@@ -2434,14 +2438,13 @@ namespace iAndon.Biz.Logic
                                         detail.ACTUAL_QUANTITY = detail.FINISH_AT - detail.START_AT + 1;
                                         detail.FINISHED = eventTime;
                                         WriteSyncData(linePMS, line.LINE_CODE);
-                                        test = true;
                                     }
 
                                     if (detail.ACTUAL_QUANTITY == detail.PLAN_QUANTITY)
                                     {
                                         FinishReportLineDetail(line.LINE_ID, detail.REPORT_LINE_DETAIL_ID, _lastProductionTime, Consts.EVENTDEF_NOPLAN);
                                         _Logger.Write(_LogCategory, $"Finish Code [{detail.PRODUCT_CODE}] - ({detail.ACTUAL_QUANTITY}/{detail.PLAN_QUANTITY}) for Line {line.LINE_ID}: {linePMS.actualquantity}", LogType.Info);
-                                        test = true;
+                                        //test = true;
                                     }
                                     //Kiểm tra trạng thái nếu STOP/COMPLETE
                                     if (detail.STATUS < (short)PLAN_STATUS.Done)
@@ -2450,7 +2453,7 @@ namespace iAndon.Biz.Logic
                                         {
                                             FinishReportLineDetail(line.LINE_ID, detail.REPORT_LINE_DETAIL_ID, _lastProductionTime, Consts.EVENTDEF_NOPLAN);
                                             _Logger.Write(_LogCategory, $"Finish PMS Stop: Code [{detail.PRODUCT_CODE}] - ({detail.ACTUAL_QUANTITY}/{detail.PLAN_QUANTITY}) for Line {line.LINE_ID}: {linePMS.actualquantity}", LogType.Info);
-                                            test = true;
+                                            //test = true;
                                         }
                                     }
                                 }
@@ -2467,7 +2470,7 @@ namespace iAndon.Biz.Logic
 
                             if (test) continue;
 
-                            //Chưa đúng --> vào kiểm tra tiếp
+                            //Chưa đúng --> vào kiểm tra tiếp xem có thằng nào chưa 
                             foreach (MES_REPORT_LINE_DETAIL reportDetail in line.ReportLineDetails)
                             {
                                 if (reportDetail.WORK_ORDER_CODE == linePMS.ponumber.ToString() && reportDetail.WORK_ORDER_PLAN_CODE == linePMS.planid.ToString())
@@ -2749,7 +2752,6 @@ namespace iAndon.Biz.Logic
                         workPlan = CreateWorkPlan(LineId, eventTime);
                     }
                 }
-
                 if (workPlan == null)
                 {
                     if (line.Shift != null)
@@ -2808,6 +2810,7 @@ namespace iAndon.Biz.Logic
                 checktime = checktime.AddDays(-1);
             }
             decimal _day = Time2Num(checktime, DayArchive);
+            DateTime _fullday = Num2Time(_day, DayArchive);
             Shift shift = CheckShift(eventTime);
             if (shift == null)
             {
@@ -2821,7 +2824,10 @@ namespace iAndon.Biz.Logic
                 DAY = _day,
                 LINE_ID = LineId,
                 SHIFT_ID = shift.SHIFT_ID,
-                STATUS = (int)PLAN_STATUS.NotStart, //Đặt trạng thái kế hoạch để không reload nữa
+                STATUS = (short)PLAN_STATUS.NotStart, //Đặt trạng thái kế hoạch để không reload nữa
+                PLAN_DATE = _fullday,
+                PLAN_HOUR = 0,
+                WORKING_ID = "0",
             };
             WorkPlan workPlan = new WorkPlan().Cast(tblWorkPlan, shift);
 
@@ -3970,34 +3976,32 @@ namespace iAndon.Biz.Logic
         }
         private decimal GetPerformance(string _productId = "")
         {
-            decimal _performance = _DefaultPerformance;
-            if (_CalculateByPerformance)
+            decimal _performance = 0;
+            try
             {
-                try
+                if (_productId != "")
                 {
-                    if (_productId != "")
+                    using (Entities _dbContext = new Entities())
                     {
-                        using (Entities _dbContext = new Entities())
+                        DM_MES_PRODUCT product = _dbContext.DM_MES_PRODUCT.FirstOrDefault(x => x.PRODUCT_ID == _productId);
+                        if (product != null)
                         {
-                            DM_MES_PRODUCT product = _dbContext.DM_MES_PRODUCT.FirstOrDefault(x => x.PRODUCT_ID == _productId);
-                            if (product != null)
-                            {
-                                _performance = product.PERFORMANCE;
-                            }
-                            if (_performance == 0)
-                            {
-                                _performance = _DefaultPerformance;
-                            }
+                            _performance = product.PERFORMANCE;
+                        }
+                        if (_performance == 0)
+                        {
+                            _performance = _DefaultPerformance;
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    _Logger.Write(_LogCategory, $"Get Performance of Product {_productId} Error: {ex}", LogType.Error);
-                    
-                    _performance = _DefaultPerformance;
-                }
             }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Get Performance of Product {_productId} Error: {ex}", LogType.Error);
+                    
+                _performance = _DefaultPerformance;
+            }
+
             return Math.Round(100 / _performance,2);
 
         }
@@ -4155,7 +4159,9 @@ namespace iAndon.Biz.Logic
                                     reportLine.ACTUAL_QUANTITY = line.ReportLine.ACTUAL_QUANTITY;
                                     reportLine.ACTUAL_NG_QUANTITY = line.ReportLine.ACTUAL_NG_QUANTITY;
                                     reportLine.ACTUAL_TAKT_TIME = line.ReportLine.ACTUAL_TAKT_TIME;
+                                    reportLine.ACTUAL_HEAD_COUNT = line.ReportLine.ACTUAL_HEAD_COUNT;
                                     reportLine.ACTUAL_UPH = line.ReportLine.ACTUAL_UPH;
+                                    reportLine.ACTUAL_UPPH = line.ReportLine.ACTUAL_UPPH;
 
                                     reportLine.TIME_RATE = line.ReportLine.TIME_RATE;
                                     reportLine.PLAN_RATE = line.ReportLine.PLAN_RATE;
@@ -4216,12 +4222,18 @@ namespace iAndon.Biz.Logic
                                         detail.ACTUAL_QUANTITY = reportLineDetail.ACTUAL_QUANTITY;
                                         detail.ACTUAL_NG_QUANTITY = reportLineDetail.ACTUAL_NG_QUANTITY;
                                         detail.ACTUAL_TAKT_TIME = reportLineDetail.ACTUAL_TAKT_TIME;
+                                        detail.ACTUAL_HEAD_COUNT = reportLineDetail.ACTUAL_HEAD_COUNT;
                                         detail.ACTUAL_UPH = reportLineDetail.ACTUAL_UPH;
                                         detail.ACTUAL_UPPH = reportLineDetail.ACTUAL_UPPH;
 
                                         //2 giá trị sửa online từ web
                                         detail.RUNNING_HEAD_COUNT = reportLineDetail.RUNNING_HEAD_COUNT;
                                         detail.RUNNING_TAKT_TIME = reportLineDetail.RUNNING_TAKT_TIME;
+
+                                        detail.RUNNING_TARGET_QUANTITY = reportLineDetail.RUNNING_TARGET_QUANTITY;
+                                        detail.RUNNING_UPH = reportLineDetail.RUNNING_UPH;
+                                        detail.RUNNING_UPPH= reportLineDetail.RUNNING_UPPH;
+                                        detail.RUNNING_TARGET_RATE = reportLineDetail.RUNNING_TARGET_RATE;
 
                                         detail.START_AT = reportLineDetail.START_AT;
                                         detail.FINISH_AT = reportLineDetail.FINISH_AT;
@@ -6247,7 +6259,12 @@ namespace iAndon.Biz.Logic
                                             if (rawData.HEADCOUNT > 0) detail.PLAN_HEAD_COUNT = (short)rawData.HEADCOUNT;
                                         }
                                         if (rawData.TAKT_TIME > 0) detail.RUNNING_TAKT_TIME = rawData.TAKT_TIME;
-                                        if (rawData.HEADCOUNT > 0) detail.RUNNING_HEAD_COUNT = (short)rawData.HEADCOUNT;
+                                        if (rawData.HEADCOUNT > 0)
+                                        {
+                                            //Riêng HeadCount thì chạy và thực tế là giống nhau
+                                            detail.RUNNING_HEAD_COUNT = (short)rawData.HEADCOUNT;
+                                            detail.ACTUAL_HEAD_COUNT = (short)rawData.HEADCOUNT;
+                                        }
                                         _Logger.Write(_LogCategory, $"Update Config done for {detail.REPORT_LINE_DETAIL_ID}: Headcount {detail.RUNNING_HEAD_COUNT}, Takttime {detail.PLAN_TAKT_TIME}", LogType.Debug);
 
                                         rawData.STATUS = Consts.DONE_STATUS;
