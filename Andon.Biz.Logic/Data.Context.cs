@@ -63,5 +63,6 @@ namespace iAndon.Biz.Logic
         public virtual DbSet<MES_REPORT_LINE> MES_REPORT_LINE { get; set; }
         public virtual DbSet<MES_REPORT_LINE_DETAIL> MES_REPORT_LINE_DETAIL { get; set; }
         public virtual DbSet<MES_WORK_PLAN_DETAIL> MES_WORK_PLAN_DETAIL { get; set; }
+        public virtual DbSet<MES_LINE_TIME_PRODUTION> MES_LINE_TIME_PRODUTION { get; set; }
     }
 }

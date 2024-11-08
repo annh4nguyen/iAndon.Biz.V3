@@ -181,4 +181,28 @@ namespace iAndon.Biz.Logic.Models
         public decimal ActualQuantity { get; set; }
         public decimal NGQuantity { get; set; }
     }
+
+    public class TimeProduction
+    {
+        public string LineId { get; set; }
+        public string WorkPlanId { get; set; }
+        public decimal Planning { get; set; }
+        public decimal Running { get; set; }
+        public decimal Stop { get; set; }
+        public decimal Break { get; set; }
+        public decimal NoPlan { get; set; }
+        public decimal OT_1 { get; set; }
+        public decimal OT_2 { get; set; }
+        public decimal OT_3 { get; set; }
+        public decimal OT_4 { get; set; }
+        public decimal OT_5 { get; set; }
+        public decimal OT_6 { get; set; }
+        public decimal OutStop_1 { get; set; }
+        public decimal OutStop_2 { get; set; }
+        public decimal OutStop_3 { get; set; }
+        public decimal OutStop_4 { get; set; }
+        public decimal OutStop_5 { get; set; }
+        public decimal OutStop_6 { get; set; }
+        public decimal ActualWorking { get; set; }
+    }
 }

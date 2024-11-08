@@ -43,6 +43,7 @@
         <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE" Width="1.5" PointX="0.75" PointY="19.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" Width="1.5" PointX="8.75" PointY="21.75" />
         <EntityTypeShape EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" Width="1.5" PointX="10.75" PointY="21.75" />
+        <EntityTypeShape EntityType="DomainDbContext.MES_LINE_TIME_PRODUTION" Width="1.5" PointX="21.375" PointY="21.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

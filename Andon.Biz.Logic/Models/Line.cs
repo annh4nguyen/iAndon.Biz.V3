@@ -16,6 +16,7 @@ namespace iAndon.Biz.Logic.Models
         public List<MES_LINE_EVENT> LineEvents { get; set; }
         public List<MES_LINE_WORKING> LineWorkings { get; set; }
         public List<MES_LINE_STOP> LineStops { get; set; }
+        public MES_LINE_TIME_PRODUTION LineTimeProduction { get; set; }
         public MES_REPORT_LINE ReportLine { get; set; }
         public List<MES_REPORT_LINE_DETAIL> ReportLineDetails { get; set; }
         public List<TimeData> TimeDatas { get; set; }
