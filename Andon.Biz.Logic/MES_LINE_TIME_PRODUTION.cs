@@ -20,7 +20,7 @@ namespace iAndon.Biz.Logic
         public string LINE_NAME { get; set; }
         public short LINE_NUMBER_ORDER { get; set; }
         public string WORK_PLAN_ID { get; set; }
-        public decimal DAY { get; set; }
+        public System.DateTime DAY { get; set; }
         public string SHIFT_ID { get; set; }
         public string SHIFT_NAME { get; set; }
         public decimal PLANNING_DURATION { get; set; }

@@ -1,4 +1,4 @@
-﻿// T4 code generation is enabled for model 'D:\Code\GitHub\iAndon.Biz.V3\Andon.Biz.Logic\Data.edmx'. 
+﻿// T4 code generation is enabled for model 'D:\Code\Final\iAndon-V3\Biz\Andon.Biz.Logic\Data.edmx'. 
 // To enable legacy code generation, change the value of the 'Code Generation Strategy' designer
 // property to 'Legacy ObjectContext'. This property is available in the Properties Window when the model
 // is open in the designer.

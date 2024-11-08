@@ -5238,7 +5238,7 @@ namespace iAndon.Biz.Logic
                         LINE_NAME = line.LINE_NAME,
                         LINE_NUMBER_ORDER = (short)line.NUMBER_ORDER,
                         WORK_PLAN_ID = _workPlanId,
-                        DAY = _day,
+                        DAY = Num2Time(_day, DayArchive),
                         SHIFT_ID = _shiftId,
                         SHIFT_NAME = line.Shift.SHIFT_NAME,
                         PLANNING_DURATION = _planDuration / CalculateDurationFromSecond,
@@ -6690,27 +6690,27 @@ namespace iAndon.Biz.Logic
                         //_Logger.Write(_LogCategory, $"Update Config: count {actualRawDatas.Count}", LogType.Debug);
                         foreach (MES_LINE_TIME_PRODUTION rawData in actualRawDatas)
                         {
-                            foreach (Line line in _Lines)
+                            Line line = _Lines.FirstOrDefault(x=>x.LINE_ID ==  rawData.LINE_ID);
+                            if (line == null) continue;
+
+                            if (line.LineTimeProduction != null)
                             {
-                                if (line.LineTimeProduction != null)
-                                {
-                                    //Ghi nhận các giá trị mới nhập
-                                    line.LineTimeProduction.CHANGEOVER_DURATION = rawData.CHANGEOVER_DURATION;
+                                //Ghi nhận các giá trị mới nhập
+                                line.LineTimeProduction.CHANGEOVER_DURATION = rawData.CHANGEOVER_DURATION;
 
-                                    line.LineTimeProduction.OT_1 = rawData.OT_1;
-                                    line.LineTimeProduction.OT_2 = rawData.OT_2;
-                                    line.LineTimeProduction.OT_3 = rawData.OT_3;
-                                    line.LineTimeProduction.OT_4 = rawData.OT_4;
-                                    line.LineTimeProduction.OT_5 = rawData.OT_5;
-                                    line.LineTimeProduction.OT_6 = rawData.OT_6;
+                                line.LineTimeProduction.OT_1 = rawData.OT_1;
+                                line.LineTimeProduction.OT_2 = rawData.OT_2;
+                                line.LineTimeProduction.OT_3 = rawData.OT_3;
+                                line.LineTimeProduction.OT_4 = rawData.OT_4;
+                                line.LineTimeProduction.OT_5 = rawData.OT_5;
+                                line.LineTimeProduction.OT_6 = rawData.OT_6;
 
-                                    line.LineTimeProduction.OUT_STOP_1 = rawData.OUT_STOP_1;
-                                    line.LineTimeProduction.OUT_STOP_2 = rawData.OUT_STOP_2;
-                                    line.LineTimeProduction.OUT_STOP_3 = rawData.OUT_STOP_3;
-                                    line.LineTimeProduction.OUT_STOP_4 = rawData.OUT_STOP_4;
-                                    line.LineTimeProduction.OUT_STOP_5 = rawData.OUT_STOP_5;
-                                    line.LineTimeProduction.OUT_STOP_6 = rawData.OUT_STOP_6;
-                                }
+                                line.LineTimeProduction.OUT_STOP_1 = rawData.OUT_STOP_1;
+                                line.LineTimeProduction.OUT_STOP_2 = rawData.OUT_STOP_2;
+                                line.LineTimeProduction.OUT_STOP_3 = rawData.OUT_STOP_3;
+                                line.LineTimeProduction.OUT_STOP_4 = rawData.OUT_STOP_4;
+                                line.LineTimeProduction.OUT_STOP_5 = rawData.OUT_STOP_5;
+                                line.LineTimeProduction.OUT_STOP_6 = rawData.OUT_STOP_6;
                             }
                         }
                     }
