@@ -25,5 +25,6 @@ namespace iAndon.Biz.Logic
         public short ACTIVE { get; set; }
         public string USER_ID { get; set; }
         public string ORGANIZATION_ID { get; set; }
+        public string NEXT_SHIFT { get; set; }
     }
 }

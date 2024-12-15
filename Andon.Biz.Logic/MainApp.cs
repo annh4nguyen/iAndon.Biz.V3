@@ -127,6 +127,7 @@ namespace iAndon.Biz.Logic
         const int INPUT_OFF = 0;
 
         private int CalculateDurationFromSecond = 3600;
+        private int CalculateDurationFromMinute = 60;
 
         private Log _Logger;
         private readonly string _LogCategory = "Biz";
@@ -2956,6 +2957,8 @@ namespace iAndon.Biz.Logic
                                 {
                                     detail.PRODUCT_ID = product.PRODUCT_ID;
                                     detail.PRODUCT_NAME = product.PRODUCT_NAME;
+                                    //2024-12-06 - Update thêm cả phần PlanRouting.
+                                    detail.PLAN_ROUTING = product.ROUTING;
                                 }
                             }
 
@@ -3158,6 +3161,8 @@ namespace iAndon.Biz.Logic
                         line.ReportLine.ACTUAL_BREAK_DURATION = _breakDuration;
                         line.ReportLine.ACTUAL_WORKING_DURATION = line.ReportLine.ACTUAL_DURATION - _breakDuration - _stopDuration - _noPlanDuration;
 
+                        decimal _totalQuantity = 0, _totalOfPlanHour = 0, _totalOfStandardHour = 0;
+
                         if (line.ReportLineDetails.Count > 0)
                         {
                             //Tính đến thằng Line
@@ -3165,7 +3170,15 @@ namespace iAndon.Biz.Logic
 
                             reportLine.PLAN_HEAD_COUNT = (short)Math.Round(line.ReportLineDetails.Average(x => x.PLAN_HEAD_COUNT), 0);
 
-                            reportLine.ACTUAL_ROUTING = Math.Round(line.ReportLineDetails.Average(x => x.ACTUAL_ROUTING ), 6);
+                            //Tính phần Routing không tính trung bình mà phải theo số lượng
+                            //reportLine.ACTUAL_ROUTING = Math.Round(line.ReportLineDetails.Average(x => x.ACTUAL_ROUTING ), 6);
+                            foreach (MES_REPORT_LINE_DETAIL detailReport in line.ReportLineDetails)
+                            {
+                                _totalQuantity += detailReport.ACTUAL_QUANTITY;
+                                _totalOfPlanHour += detailReport.ACTUAL_QUANTITY * detailReport.ACTUAL_ROUTING;
+                                _totalOfStandardHour += detailReport.ACTUAL_QUANTITY * detailReport.PLAN_ROUTING;
+                            }
+                            line.ReportLine.ACTUAL_ROUTING = (decimal)Math.Round(_totalOfPlanHour / _totalQuantity, 6);
 
                             reportLine.TARGET_QUANTITY = line.ReportLineDetails.Sum(x => x.TARGET_QUANTITY);
                             reportLine.ACTUAL_QUANTITY = line.ReportLineDetails.Sum(x => x.ACTUAL_QUANTITY);
@@ -3236,18 +3249,32 @@ namespace iAndon.Biz.Logic
                         #endregion
 
                         #region LineTimeProduction
+
                         line.LineTimeProduction.PLANNING_DURATION = line.ReportLine.PLAN_TOTAL_DURATION / CalculateDurationFromSecond;
                         line.LineTimeProduction.RUNNING_DURATION = line.ReportLine.ACTUAL_WORKING_DURATION / CalculateDurationFromSecond;
                         line.LineTimeProduction.BREAK_DURATION = line.ReportLine.ACTUAL_BREAK_DURATION / CalculateDurationFromSecond;
                         line.LineTimeProduction.STOP_DURATION = line.ReportLine.ACTUAL_STOP_DURATION/ CalculateDurationFromSecond;
 
+                        //2024-12-15 - Calculate StandardHour - Đang tính từ giờ --> Phút
+                        line.LineTimeProduction.STANDARD_DURATION = _totalOfStandardHour * CalculateDurationFromMinute;
+
+                        short _head_count = line.ReportLine.ACTUAL_HEAD_COUNT;
+                        line.LineTimeProduction.PLANNING_DURATION = _head_count * line.LineTimeProduction.PLANNING_DURATION;
+                        line.LineTimeProduction.RUNNING_DURATION = _head_count * line.LineTimeProduction.RUNNING_DURATION;
+                        line.LineTimeProduction.BREAK_DURATION = _head_count * line.LineTimeProduction.BREAK_DURATION;
+                        line.LineTimeProduction.STOP_DURATION = _head_count * line.LineTimeProduction.STOP_DURATION;
+
+
                         decimal _noPlan = line.LineTimeProduction.PLANNING_DURATION - line.LineTimeProduction.RUNNING_DURATION - line.LineTimeProduction.STOP_DURATION - line.LineTimeProduction.BREAK_DURATION - line.LineTimeProduction.CHANGEOVER_DURATION;
                         if (_noPlan < 0) _noPlan = 0;
                         line.LineTimeProduction.NOPLAN_DURATION = _noPlan;
 
-                        line.LineTimeProduction.ACTUAL_WORKING_DURATION = line.LineTimeProduction.RUNNING_DURATION + line.LineTimeProduction.STOP_DURATION + line.LineTimeProduction.BREAK_DURATION + line.LineTimeProduction.CHANGEOVER_DURATION;
-                        line.LineTimeProduction.ACTUAL_WORKING_DURATION += (line.LineTimeProduction.OT_1 + line.LineTimeProduction.OT_2 + line.LineTimeProduction.OT_3 + line.LineTimeProduction.OT_4 + line.LineTimeProduction.OT_5 + line.LineTimeProduction.OT_6);
-                        line.LineTimeProduction.ACTUAL_WORKING_DURATION -= (line.LineTimeProduction.OUT_STOP_1 + line.LineTimeProduction.OUT_STOP_2 + line.LineTimeProduction.OUT_STOP_3 + line.LineTimeProduction.OUT_STOP_4 + line.LineTimeProduction.OUT_STOP_5 + line.LineTimeProduction.OUT_STOP_6);
+                        decimal _OT_STOP = (line.LineTimeProduction.OT_1 + line.LineTimeProduction.OT_2 + line.LineTimeProduction.OT_3 + line.LineTimeProduction.OT_4 + line.LineTimeProduction.OT_5 + line.LineTimeProduction.OT_6);
+                        _OT_STOP -= (line.LineTimeProduction.OUT_STOP_1 + line.LineTimeProduction.OUT_STOP_2 + line.LineTimeProduction.OUT_STOP_3 + line.LineTimeProduction.OUT_STOP_4 + line.LineTimeProduction.OUT_STOP_5 + line.LineTimeProduction.OUT_STOP_6);
+                        //line.LineTimeProduction.ACTUAL_WORKING_DURATION = line.LineTimeProduction.RUNNING_DURATION + line.LineTimeProduction.STOP_DURATION + line.LineTimeProduction.BREAK_DURATION + line.LineTimeProduction.CHANGEOVER_DURATION;
+
+                        line.LineTimeProduction.ACTUAL_WORKING_BY_PLAN = line.LineTimeProduction.PLANNING_DURATION + _OT_STOP;
+                        line.LineTimeProduction.ACTUAL_WORKING_BY_PERFORMANCE = line.LineTimeProduction.RUNNING_DURATION + line.LineTimeProduction.STOP_DURATION + _OT_STOP;
 
                         #endregion
                     }
@@ -3271,9 +3298,8 @@ namespace iAndon.Biz.Logic
                 {
                     WorkPlan workPlan = _WorkPlans.FirstOrDefault(wp => wp.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID);
 
-                    _Logger.Write(_LogCategory, $"Finish WorkPlan [{workPlan.PlanStart:HH:mm} - {workPlan.PlanFinish:HH:mm}] - Shift [{workPlan.SHIFT_ID}] at Line {LineId}", LogType.Info);
-
                     if (workPlan.STATUS == (int)PLAN_STATUS.Done) return;
+                    _Logger.Write(_LogCategory, $"Finish WorkPlan [{workPlan.PlanStart:HH:mm} - {workPlan.PlanFinish:HH:mm}] - Shift [{workPlan.SHIFT_ID}] at Line {LineId}", LogType.Info);
 
                     workPlan.STATUS = (int)PLAN_STATUS.Done;
                     //workPlan.Priority = 1; --> Chưa cho xóa, lúc nào loại bỏ hẳn mới xóa
@@ -3755,7 +3781,17 @@ namespace iAndon.Biz.Logic
                             line.ReportLine.PLAN_TOTAL_DURATION = (decimal)((DateTime)line.ReportLine.PLAN_FINISH - (DateTime)line.ReportLine.PLAN_START).TotalSeconds;
                         }
                         line.ReportLine.STARTED = line.ReportLineDetails.Min(x => (DateTime)x.STARTED);
-                        line.ReportLine.PLAN_ROUTING = (decimal) Math.Round(line.ReportLineDetails.Average(x => x.PLAN_ROUTING),6);
+                        //Tính PLAN_ROUTING phải tính theo số lượng
+
+                        decimal _totalQuantity = 0, _totalOfPlanHour = 0;
+                        foreach(MES_REPORT_LINE_DETAIL detailReport in line.ReportLineDetails)
+                        {
+                            _totalQuantity += detailReport.PLAN_QUANTITY;
+                            _totalOfPlanHour += detailReport.PLAN_QUANTITY * detailReport.PLAN_ROUTING;
+                        }
+                        //line.ReportLine.PLAN_ROUTING = (decimal) Math.Round(line.ReportLineDetails.Average(x => x.PLAN_ROUTING),6);
+                        line.ReportLine.PLAN_ROUTING = (decimal) Math.Round(_totalOfPlanHour / _totalQuantity, 6);
+
                         //Tính toán Break
                         decimal _breakDuration = 0;
                         foreach (BreakTime breakTime in line.BreakTimes)
@@ -4320,22 +4356,23 @@ namespace iAndon.Biz.Logic
                             //Kiểm tra theo LineId, WorkPlan và EventDefId
                             //tblLineEvent tblLineEvent = _dbContext.tblLineEvents.FirstOrDefault(x => x.LineId == lineEvent.LineId && x.WorkPlanId == lineEvent.WorkPlanId && x.EventDefId == lineEvent.EventDefId && x.Start == lineEvent.Start);
 
-                            if (_IsUseReasonColorForStop)
+                            lineEvent.EVENTDEF_DESCRIPTION = "";
+                            if (lineEvent.EVENTDEF_ID == Consts.EVENTDEF_STOP)
                             {
-                                lineEvent.EVENTDEF_DESCRIPTION = "";
-                                if (lineEvent.EVENTDEF_ID == Consts.EVENTDEF_STOP)
+                                string _eventDefColor = line.EventDefColor;
+                                lineEvent.EVENTDEF_COLOR = _eventDefColor;
+
+                                DM_MES_STOP_REASON stop = _StopReasons.FirstOrDefault(x => x.REASON_ID == lineEvent.REASON_ID);
+                                if (stop != null)
                                 {
-                                    string _eventDefColor = line.EventDefColor;
-                                    DM_MES_STOP_REASON stop = _StopReasons.FirstOrDefault(x => x.REASON_ID == lineEvent.REASON_ID);
-                                    if (stop != null)
+                                    if (_IsUseReasonColorForStop)
                                     {
-                                        lineEvent.EVENTDEF_COLOR = stop.REASON_COLOR;
-                                        if (lineEvent.EVENTDEF_COLOR.Trim() == "")
+                                        if (lineEvent.EVENTDEF_COLOR.Trim() != "")
                                         {
-                                            lineEvent.EVENTDEF_COLOR = _eventDefColor;
+                                            lineEvent.EVENTDEF_COLOR = stop.REASON_COLOR;
                                         }
-                                        lineEvent.EVENTDEF_DESCRIPTION = stop.REASON_NAME_EN + "/" + stop.REASON_NAME_VN;
                                     }
+                                    lineEvent.EVENTDEF_DESCRIPTION = stop.REASON_NAME_EN + "/" + stop.REASON_NAME_VN;
                                 }
                             }
 
@@ -4671,15 +4708,16 @@ namespace iAndon.Biz.Logic
                     if (line.WorkPlan != null)
                     {
                         //Nếu = DONE thì vẫn tính bình thường, sau cùng mới xiên
-                        if (line.WorkPlan.STATUS == (int)PLAN_STATUS.Proccessing || line.WorkPlan.STATUS == (int)PLAN_STATUS.Done)
+                        if (line.WorkPlan.STATUS == (short)PLAN_STATUS.Proccessing || line.WorkPlan.STATUS == (short)PLAN_STATUS.Done)
                         {
-                            MES_LINE_TIME_PRODUTION tblLineTimeProduction = _dbContext.MES_LINE_TIME_PRODUTION.FirstOrDefault(wp => wp.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID);
+                            MES_LINE_TIME_PRODUCTION tblLineTimeProduction = _dbContext.MES_LINE_TIME_PRODUCTION.FirstOrDefault(wp => wp.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID);
                             if (tblLineTimeProduction == null)
                             {
-                                _dbContext.MES_LINE_TIME_PRODUTION.Add(line.LineTimeProduction);
+                                _dbContext.MES_LINE_TIME_PRODUCTION.Add(line.LineTimeProduction);
                             }
                             else
                             {
+                                tblLineTimeProduction.STANDARD_DURATION = line.LineTimeProduction.STANDARD_DURATION;
                                 tblLineTimeProduction.PLANNING_DURATION = line.LineTimeProduction.PLANNING_DURATION;
                                 tblLineTimeProduction.RUNNING_DURATION = line.LineTimeProduction.RUNNING_DURATION;
                                 tblLineTimeProduction.STOP_DURATION = line.LineTimeProduction.STOP_DURATION;
@@ -4699,12 +4737,17 @@ namespace iAndon.Biz.Logic
                                 tblLineTimeProduction.OUT_STOP_5 = line.LineTimeProduction.OUT_STOP_5;
                                 tblLineTimeProduction.OUT_STOP_6 = line.LineTimeProduction.OUT_STOP_6;
 
-                                tblLineTimeProduction.ACTUAL_WORKING_DURATION = line.LineTimeProduction.ACTUAL_WORKING_DURATION;
+                                tblLineTimeProduction.ACTUAL_WORKING_BY_PLAN = line.LineTimeProduction.ACTUAL_WORKING_BY_PLAN;
+                                tblLineTimeProduction.ACTUAL_WORKING_BY_PERFORMANCE = line.LineTimeProduction.ACTUAL_WORKING_BY_PERFORMANCE;
+
                                 tblLineTimeProduction.STATUS = line.WorkPlan.STATUS;
 
                                 _dbContext.Entry(tblLineTimeProduction).State = System.Data.Entity.EntityState.Modified;
                             }
-                            //_Logger.Write(_LogCategory, $"Process Data: WorkPlan {line.WorkPlan.WORK_PLAN_ID} - WorkPlanDetail: {planDetail.WORK_PLAN_DETAIL_ID} - Status: {planDetail.STATUS}", LogType.Debug);
+                            if (line.WorkPlan.STATUS == (short)PLAN_STATUS.Done)
+                            {
+                                _Logger.Write(_LogCategory, $"Finished WorkPlan {line.WorkPlan.WORK_PLAN_ID} - Day [{line.WorkPlan.DAY}] - Finish Time Producttion of Line: [{line.LINE_CODE}]", LogType.Debug);
+                            }
                         }
 
                     }    
@@ -5230,7 +5273,7 @@ namespace iAndon.Biz.Logic
                 #region LineTimeProduction
                 if (line.LineTimeProduction == null)
                 {
-                    line.LineTimeProduction = new MES_LINE_TIME_PRODUTION()
+                    line.LineTimeProduction = new MES_LINE_TIME_PRODUCTION()
                     {
                         LINE_TIME_PRODUTION_ID = GenID(),
                         LINE_ID = line.LINE_ID,
@@ -5259,7 +5302,8 @@ namespace iAndon.Biz.Logic
                         OUT_STOP_5 = 0,
                         OUT_STOP_6 = 0,
 
-                        ACTUAL_WORKING_DURATION = 0,
+                        ACTUAL_WORKING_BY_PLAN = 0,
+                        ACTUAL_WORKING_BY_PERFORMANCE = 0,
                         STATUS = _status,
                     };
                 }
@@ -6683,12 +6727,12 @@ namespace iAndon.Biz.Logic
                     DateTime eventTime = DateTime.Now;
 
                     //List<MES_RAW_UPDATE_CONFIG> actualRawDatas = _dbContext.MES_RAW_UPDATE_CONFIG.Where(x=> (x.STATUS == Consts.DRAFT_STATUS) && (x.UPDATED >= lastTime)).ToList();
-                    List<MES_LINE_TIME_PRODUTION> actualRawDatas = _dbContext.MES_LINE_TIME_PRODUTION.Where(x => x.STATUS == (short)PLAN_STATUS.Proccessing).ToList();
+                    List<MES_LINE_TIME_PRODUCTION> actualRawDatas = _dbContext.MES_LINE_TIME_PRODUCTION.Where(x => x.STATUS == (short)PLAN_STATUS.Proccessing).ToList();
 
                     if (actualRawDatas.Count > 0)
                     {
                         //_Logger.Write(_LogCategory, $"Update Config: count {actualRawDatas.Count}", LogType.Debug);
-                        foreach (MES_LINE_TIME_PRODUTION rawData in actualRawDatas)
+                        foreach (MES_LINE_TIME_PRODUCTION rawData in actualRawDatas)
                         {
                             Line line = _Lines.FirstOrDefault(x=>x.LINE_ID ==  rawData.LINE_ID);
                             if (line == null) continue;

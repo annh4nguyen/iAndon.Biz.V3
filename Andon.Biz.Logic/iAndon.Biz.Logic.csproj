@@ -148,7 +148,7 @@
     <Compile Include="MES_LINE_STOP.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
-    <Compile Include="MES_LINE_TIME_PRODUTION.cs">
+    <Compile Include="MES_LINE_TIME_PRODUCTION.cs">
       <DependentUpon>Data.tt</DependentUpon>
     </Compile>
     <Compile Include="MES_LINE_WORKING.cs">

@@ -12,7 +12,7 @@ namespace iAndon.Biz.Logic
     using System;
     using System.Collections.Generic;
     
-    public partial class MES_LINE_TIME_PRODUTION
+    public partial class MES_LINE_TIME_PRODUCTION
     {
         public string LINE_TIME_PRODUTION_ID { get; set; }
         public string LINE_ID { get; set; }
@@ -23,6 +23,7 @@ namespace iAndon.Biz.Logic
         public System.DateTime DAY { get; set; }
         public string SHIFT_ID { get; set; }
         public string SHIFT_NAME { get; set; }
+        public decimal STANDARD_DURATION { get; set; }
         public decimal PLANNING_DURATION { get; set; }
         public decimal RUNNING_DURATION { get; set; }
         public decimal STOP_DURATION { get; set; }
@@ -41,7 +42,8 @@ namespace iAndon.Biz.Logic
         public decimal OUT_STOP_4 { get; set; }
         public decimal OUT_STOP_5 { get; set; }
         public decimal OUT_STOP_6 { get; set; }
-        public decimal ACTUAL_WORKING_DURATION { get; set; }
+        public decimal ACTUAL_WORKING_BY_PLAN { get; set; }
+        public decimal ACTUAL_WORKING_BY_PERFORMANCE { get; set; }
         public short STATUS { get; set; }
     }
 }

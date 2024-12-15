@@ -20,6 +20,7 @@
           <Property Name="ACTIVE" Type="smallint" Nullable="false" />
           <Property Name="USER_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
           <Property Name="ORGANIZATION_ID" Type="nvarchar" MaxLength="36" Nullable="false" />
+          <Property Name="NEXT_SHIFT" Type="nvarchar" MaxLength="30" Nullable="false" />
         </EntityType>
         <EntityType Name="DM_FACTORY">
           <Key>
@@ -240,7 +241,7 @@
           <Property Name="DURATION" Type="decimal" Precision="18" Scale="0" Nullable="false" />
           <Property Name="NUMBER_ORDER" Type="smallint" Nullable="false" />
         </EntityType>
-        <EntityType Name="MES_LINE_TIME_PRODUTION">
+        <EntityType Name="MES_LINE_TIME_PRODUCTION">
           <Key>
             <PropertyRef Name="LINE_TIME_PRODUTION_ID" />
           </Key>
@@ -253,6 +254,7 @@
           <Property Name="DAY" Type="datetime" Nullable="false" />
           <Property Name="SHIFT_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="SHIFT_NAME" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="STANDARD_DURATION" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="PLANNING_DURATION" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="RUNNING_DURATION" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="STOP_DURATION" Type="decimal" Precision="18" Scale="2" Nullable="false" />
@@ -271,7 +273,8 @@
           <Property Name="OUT_STOP_4" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="OUT_STOP_5" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="OUT_STOP_6" Type="decimal" Precision="18" Scale="2" Nullable="false" />
-          <Property Name="ACTUAL_WORKING_DURATION" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+          <Property Name="ACTUAL_WORKING_BY_PLAN" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+          <Property Name="ACTUAL_WORKING_BY_PERFORMANCE" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="STATUS" Type="smallint" Nullable="false" />
         </EntityType>
         <EntityType Name="MES_LINE_WORKING">
@@ -808,7 +811,7 @@
           <EntitySet Name="DM_MES_ZONE" EntityType="Self.DM_MES_ZONE" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_LINE_EVENT" EntityType="Self.MES_LINE_EVENT" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_LINE_STOP" EntityType="Self.MES_LINE_STOP" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="MES_LINE_TIME_PRODUTION" EntityType="Self.MES_LINE_TIME_PRODUTION" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="MES_LINE_TIME_PRODUCTION" EntityType="Self.MES_LINE_TIME_PRODUCTION" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_LINE_WORKING" EntityType="Self.MES_LINE_WORKING" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_LOG_LAST_UPDATE" EntityType="Self.MES_LOG_LAST_UPDATE" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="MES_MSG_LINE" EntityType="Self.MES_MSG_LINE" Schema="dbo" store:Type="Tables" />
@@ -876,7 +879,7 @@
           <EntitySet Name="MES_REPORT_LINE" EntityType="DomainDbContext.MES_REPORT_LINE" />
           <EntitySet Name="MES_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" />
-          <EntitySet Name="MES_LINE_TIME_PRODUTION" EntityType="DomainDbContext.MES_LINE_TIME_PRODUTION" />
+          <EntitySet Name="MES_LINE_TIME_PRODUCTION" EntityType="DomainDbContext.MES_LINE_TIME_PRODUCTION" />
         </EntityContainer>
         <EntityType Name="DM_MES_BREAK_TIME">
           <Key>
@@ -1309,6 +1312,7 @@
           <Property Name="ACTIVE" Type="Int16" Nullable="false" />
           <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
           <Property Name="ORGANIZATION_ID" Type="String" Nullable="false" MaxLength="36" FixedLength="false" Unicode="true" />
+          <Property Name="NEXT_SHIFT" Type="String" Nullable="false" MaxLength="30" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="MES_LINE_STOP">
           <Key>
@@ -1631,7 +1635,7 @@
           <Property Name="DESCRIPTION" Type="String" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Name="STATUS" Type="Int16" Nullable="false" />
         </EntityType>
-        <EntityType Name="MES_LINE_TIME_PRODUTION">
+        <EntityType Name="MES_LINE_TIME_PRODUCTION">
           <Key>
             <PropertyRef Name="LINE_TIME_PRODUTION_ID" />
           </Key>
@@ -1644,6 +1648,7 @@
           <Property Name="DAY" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="SHIFT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="SHIFT_NAME" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="STANDARD_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="PLANNING_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="RUNNING_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="STOP_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
@@ -1662,7 +1667,8 @@
           <Property Name="OUT_STOP_4" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="OUT_STOP_5" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="OUT_STOP_6" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
-          <Property Name="ACTUAL_WORKING_DURATION" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="ACTUAL_WORKING_BY_PLAN" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
+          <Property Name="ACTUAL_WORKING_BY_PERFORMANCE" Type="Decimal" Nullable="false" Precision="18" Scale="2" />
           <Property Name="STATUS" Type="Int16" Nullable="false" />
         </EntityType>
         </Schema>
@@ -2115,6 +2121,7 @@
           <EntitySetMapping Name="DG_DM_SHIFT">
             <EntityTypeMapping TypeName="DomainDbContext.DG_DM_SHIFT">
               <MappingFragment StoreEntitySet="DG_DM_SHIFT">
+                <ScalarProperty Name="NEXT_SHIFT" ColumnName="NEXT_SHIFT" />
                 <ScalarProperty Name="ORGANIZATION_ID" ColumnName="ORGANIZATION_ID" />
                 <ScalarProperty Name="USER_ID" ColumnName="USER_ID" />
                 <ScalarProperty Name="ACTIVE" ColumnName="ACTIVE" />
@@ -2462,11 +2469,12 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="MES_LINE_TIME_PRODUTION">
-            <EntityTypeMapping TypeName="DomainDbContext.MES_LINE_TIME_PRODUTION">
-              <MappingFragment StoreEntitySet="MES_LINE_TIME_PRODUTION">
+          <EntitySetMapping Name="MES_LINE_TIME_PRODUCTION">
+            <EntityTypeMapping TypeName="DomainDbContext.MES_LINE_TIME_PRODUCTION">
+              <MappingFragment StoreEntitySet="MES_LINE_TIME_PRODUCTION">
                 <ScalarProperty Name="STATUS" ColumnName="STATUS" />
-                <ScalarProperty Name="ACTUAL_WORKING_DURATION" ColumnName="ACTUAL_WORKING_DURATION" />
+                <ScalarProperty Name="ACTUAL_WORKING_BY_PERFORMANCE" ColumnName="ACTUAL_WORKING_BY_PERFORMANCE" />
+                <ScalarProperty Name="ACTUAL_WORKING_BY_PLAN" ColumnName="ACTUAL_WORKING_BY_PLAN" />
                 <ScalarProperty Name="OUT_STOP_6" ColumnName="OUT_STOP_6" />
                 <ScalarProperty Name="OUT_STOP_5" ColumnName="OUT_STOP_5" />
                 <ScalarProperty Name="OUT_STOP_4" ColumnName="OUT_STOP_4" />
@@ -2485,6 +2493,7 @@
                 <ScalarProperty Name="STOP_DURATION" ColumnName="STOP_DURATION" />
                 <ScalarProperty Name="RUNNING_DURATION" ColumnName="RUNNING_DURATION" />
                 <ScalarProperty Name="PLANNING_DURATION" ColumnName="PLANNING_DURATION" />
+                <ScalarProperty Name="STANDARD_DURATION" ColumnName="STANDARD_DURATION" />
                 <ScalarProperty Name="SHIFT_NAME" ColumnName="SHIFT_NAME" />
                 <ScalarProperty Name="SHIFT_ID" ColumnName="SHIFT_ID" />
                 <ScalarProperty Name="DAY" ColumnName="DAY" />
