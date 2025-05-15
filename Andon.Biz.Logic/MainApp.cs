@@ -44,6 +44,9 @@ namespace iAndon.Biz.Logic
         private string _SMTP_Password = ConfigurationManager.AppSettings["SMTP.Password"];
         private string _EmailFrom = ConfigurationManager.AppSettings["email_from"];
 
+        private string _SplitListCharacter = ConfigurationManager.AppSettings["split_list_character"];
+        
+
         private int _QueueInterval = int.Parse(ConfigurationManager.AppSettings["queue_interval"]);
         private int _MessageInterval = int.Parse(ConfigurationManager.AppSettings["message_interval"]);
         private int _DataInterval = int.Parse(ConfigurationManager.AppSettings["data_interval"]);
@@ -65,7 +68,8 @@ namespace iAndon.Biz.Logic
         private static int _DefaultHeadCount = int.Parse(ConfigurationManager.AppSettings["default_head_count"]);
         private static decimal _DefaultCycleTime = decimal.Parse(ConfigurationManager.AppSettings["default_cycle_time"]);
         private static decimal _DefaultPerformance = decimal.Parse(ConfigurationManager.AppSettings["default_performance"]);
-
+        private static decimal _MaxPerformance = decimal.Parse(ConfigurationManager.AppSettings["max_production_performance"]);
+        
         private bool _ProductionInBreak = (int.Parse(ConfigurationManager.AppSettings["production_in_break"]) == 1);
         private bool _CalculateByPerformance = (int.Parse(ConfigurationManager.AppSettings["calculate_by_performance"]) == 1);
         private bool _RunningByPerformance = (int.Parse(ConfigurationManager.AppSettings["running_by_performance"]) == 1);
@@ -81,6 +85,7 @@ namespace iAndon.Biz.Logic
         private bool _AddEventUntilFinish = (int.Parse(ConfigurationManager.AppSettings["add_event_until_finish"]) == 1);
         private bool _AddStopReasonToWorking = (int.Parse(ConfigurationManager.AppSettings["add_stop_reason_to_working"]) == 1);
         private bool _AutoUpdateBackEvent = (int.Parse(ConfigurationManager.AppSettings["auto_update_back_event"]) == 1);
+        private bool _AddPlanDurationToWorking = (int.Parse(ConfigurationManager.AppSettings["add_plan_duration_to_working_display"]) == 1);
 
 
         private bool _IsPerformanceByDetail = (int.Parse(ConfigurationManager.AppSettings["performance_by_detail"]) == 1);
@@ -182,6 +187,8 @@ namespace iAndon.Biz.Logic
         private static bool IsRunning = false;//True: Đang trong quá trình lấy message từ Queue
         private static bool IsSyncError = false; // Đồng bộ từ Queue về để Sync
         private static bool IsSyncing = false;//True: Đang trong quá trình lấy message từ Queue
+
+        private string _LinesUpdated = "";
         #endregion
 
         #region public methods
@@ -949,6 +956,7 @@ namespace iAndon.Biz.Logic
             try
             {
                 DateTime lastTime = _LastTimeReload;
+                DateTime eventTime = DateTime.Now;
                 //_Logger.Write(_LogCategory, $"Reload For New Data at [{lastTime:HH:mm:ss.fff}]", LogType.Debug);
                 using (Entities _dbContext = new Entities())
                 {
@@ -959,13 +967,13 @@ namespace iAndon.Biz.Logic
                     _LastTimeReload = DateTime.Now;
                     _LastTimeReload = _LastTimeReload.AddMilliseconds(0 - _LastTimeReload.Millisecond);
 
+                    eventTime = _LastTimeReload;
+
                     //Có dữ liệu thì mới làm
                     if (lastUpdates.Count > 0)
                     {
                         _Logger.Write(_LogCategory, $"Reload at [{lastTime:HH:mm:ss.fff}]: [{lastUpdates.Count}]", LogType.Debug);
                         _dbContext.Configuration.AutoDetectChangesEnabled = false;
-
-                        DateTime eventTime = DateTime.Now;
 
                         #region WorkPlan
 
@@ -1259,10 +1267,15 @@ namespace iAndon.Biz.Logic
                         _dbContext.Configuration.AutoDetectChangesEnabled = true;
                     }
 
-                    //Reload Product --> trường hợp NOT FOUND thì update
-                    ReloadProducts();
-
                 }
+
+                //Reload Product --> trường hợp NOT FOUND thì update
+                //ReloadProducts();
+
+                //2025-05-15: Cho reload cả cấu hình luôn.
+                ReloadConfigurations();
+                //Cập nhật lại breakTime
+                _LinesUpdated = UpdateBreakTimes(eventTime); //????
 
                 #region ReportLineDetail
                 //Cập nhật sản lượng nhập vào
@@ -1822,6 +1835,14 @@ namespace iAndon.Biz.Logic
 
                             foreach (MES_LINE_WORKING lineWorkingWSS in line.LineWorkings)
                             {
+                                if (!_AddPlanDurationToWorking)
+                                { 
+                                    if (lineWorkingWSS.EVENTDEF_ID == Consts.EVENTDEF_PLAN)
+                                    {
+                                        continue;
+                                    }    
+                                }    
+
                                 MES_MSG_LINE_WORKING msgLineWorking = _dbContext.MES_MSG_LINE_WORKING.FirstOrDefault(x => x.ID == lineWorkingWSS.LINE_WORKING_ID);
 
                                 if (msgLineWorking == null)
@@ -2817,7 +2838,7 @@ namespace iAndon.Biz.Logic
                     line.BreakTimes.Clear();
 
                     line.BreakTimes = GetBreakTimes(line.LINE_ID, line.WorkPlan.DAY, _currentShift.SHIFT_ID);
-    
+
                     //Khởi tạo giá trị cho Node
                     ResetNode(line.LINE_ID);
 
@@ -2897,13 +2918,34 @@ namespace iAndon.Biz.Logic
                 MES_REPORT_LINE reportLine = line.ReportLine;
 
                 MES_REPORT_LINE_DETAIL detailRunning = null;
+                
+                //Tính toán thằng TimeData nếu có cập nhật break
+                if (_LinesUpdated != "")
+                {
+                    if (_LinesUpdated.Contains(_SplitListCharacter + line.LINE_ID + _SplitListCharacter))
+                    {
+                        BuildTimeData(line.LINE_ID, false);
+                        //Xóa bóa
+                        _LinesUpdated.Replace(_SplitListCharacter + line.LINE_ID + _SplitListCharacter,"");
+                    }    
+                }    
 
                 decimal _totalPlanDuration = 0;
                 //Tính các thằng chi tiết
                 if (line.ReportLineDetails.Count > 0)
                 {
+                    
                     foreach (MES_REPORT_LINE_DETAIL detail in line.ReportLineDetails)
                     {
+                        //Xử lý thời gian bắt đầu và kết thúc theo TimeData
+                        TimeData _time = line.TimeDatas.FirstOrDefault(x => x.TimeName == detail.TIME_NAME);
+                        if (_time.Start != detail.PLAN_START || _time.Finish != detail.PLAN_FINISH)
+                        {
+                            detail.PLAN_START = _time.Start;
+                            detail.PLAN_FINISH = _time.Finish;
+                            detail.STARTED = _time.Start;
+                        }    
+
                         //Tính tổng Quantity * TaktTime
                         _totalPlanDuration += detail.PLAN_QUANTITY * detail.PLAN_TAKT_TIME;
 
@@ -3028,6 +3070,12 @@ namespace iAndon.Biz.Logic
                             if (detail.RUNNING_TARGET_QUANTITY != 0)
                             {
                                 detail.RUNNING_TARGET_RATE = Math.Round(100 * detail.ACTUAL_QUANTITY / detail.RUNNING_TARGET_QUANTITY, 1);
+
+                                if (_MaxPerformance > 0 && _MaxPerformance < detail.RUNNING_TARGET_RATE)
+                                {
+                                    detail.RUNNING_TARGET_RATE = _MaxPerformance;
+                                }
+
                             }
                             detail.RUNNING_UPH = Math.Round(3600 / _runningTakttime, 2);
 
@@ -3041,17 +3089,30 @@ namespace iAndon.Biz.Logic
                             if (detail.PLAN_QUANTITY != 0)
                             {
                                 detail.PLAN_RATE = Math.Round(100 * detail.ACTUAL_QUANTITY / detail.PLAN_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < detail.PLAN_RATE)
+                                {
+                                    detail.PLAN_RATE = _MaxPerformance;
+                                }
                             }
                             detail.TARGET_RATE = 0;
                             if (detail.TARGET_QUANTITY != 0)
                             {
                                 detail.TARGET_RATE = Math.Round(100 * detail.ACTUAL_QUANTITY / detail.TARGET_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < detail.TARGET_RATE)
+                                {
+                                    detail.TARGET_RATE = _MaxPerformance;
+                                }
                             }
 
                             detail.QUALITY_RATE = 100;
                             if (detail.ACTUAL_QUANTITY != 0)
                             {
                                 detail.QUALITY_RATE = Math.Round(100 * (detail.ACTUAL_QUANTITY - detail.ACTUAL_NG_QUANTITY) / detail.ACTUAL_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < detail.QUALITY_RATE)
+                                {
+                                    detail.QUALITY_RATE = _MaxPerformance;
+                                }
+
                                 detail.ACTUAL_TAKT_TIME = Math.Round(detail.ACTUAL_DURATION / detail.ACTUAL_QUANTITY, 2);
                             }
                             if (detail.ACTUAL_TAKT_TIME != 0)
@@ -3178,8 +3239,10 @@ namespace iAndon.Biz.Logic
                                 _totalOfPlanHour += detailReport.ACTUAL_QUANTITY * detailReport.ACTUAL_ROUTING;
                                 _totalOfStandardHour += detailReport.ACTUAL_QUANTITY * detailReport.PLAN_ROUTING;
                             }
-                            line.ReportLine.ACTUAL_ROUTING = (decimal)Math.Round(_totalOfPlanHour / _totalQuantity, 6);
-
+                            if (_totalQuantity > 0)
+                            {
+                                line.ReportLine.ACTUAL_ROUTING = (decimal)Math.Round(_totalOfPlanHour / _totalQuantity, 6);
+                            }
                             reportLine.TARGET_QUANTITY = line.ReportLineDetails.Sum(x => x.TARGET_QUANTITY);
                             reportLine.ACTUAL_QUANTITY = line.ReportLineDetails.Sum(x => x.ACTUAL_QUANTITY);
                             reportLine.ACTUAL_NG_QUANTITY = line.ReportLineDetails.Sum(x => x.ACTUAL_NG_QUANTITY);
@@ -3231,16 +3294,28 @@ namespace iAndon.Biz.Logic
                             if (reportLine.PLAN_QUANTITY != 0)
                             {
                                 reportLine.PLAN_RATE = Math.Round(100 * reportLine.ACTUAL_QUANTITY / reportLine.PLAN_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < reportLine.PLAN_RATE)
+                                {
+                                    reportLine.PLAN_RATE = _MaxPerformance;
+                                }
                             }
                             reportLine.TARGET_RATE = 0;
                             if (reportLine.TARGET_QUANTITY != 0)
                             {
                                 reportLine.TARGET_RATE = Math.Round(100 * reportLine.ACTUAL_QUANTITY / reportLine.TARGET_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < reportLine.TARGET_RATE)
+                                {
+                                    reportLine.TARGET_RATE = _MaxPerformance;
+                                }
                             }
                             reportLine.QUALITY_RATE = 100;
                             if (reportLine.ACTUAL_QUANTITY != 0)
                             {
                                 reportLine.QUALITY_RATE = Math.Round(100 * (reportLine.ACTUAL_QUANTITY - reportLine.ACTUAL_NG_QUANTITY) / reportLine.ACTUAL_QUANTITY, 1);
+                                if (_MaxPerformance > 0 && _MaxPerformance < reportLine.QUALITY_RATE)
+                                {
+                                    reportLine.QUALITY_RATE = _MaxPerformance;
+                                }
                             }
                             reportLine.OEE = Math.Round(100 * (reportLine.TIME_RATE * reportLine.TARGET_RATE * reportLine.QUALITY_RATE) / (100 * 100 * 100), 1);
                             reportLine.RESULT = CalculateResult(reportLine.STATUS);
@@ -3706,6 +3781,7 @@ namespace iAndon.Biz.Logic
                         REPORT_LINE_DETAIL_ID = GenID(),
                         TIME_NAME = "",
                         LINE_ID = line.LINE_ID,
+
                         WORK_PLAN_ID = workPlan.WORK_PLAN_ID,
                         DAY = workPlan.DAY,
                         SHIFT_ID = workPlan.SHIFT_ID,
@@ -4397,6 +4473,10 @@ namespace iAndon.Biz.Logic
                                     tblLineEvent.FINISH = lineEvent.FINISH;
                                 }
 
+                                //Sửa các trường định nghĩa
+                                tblLineEvent.LINE_CODE = line.LINE_CODE;
+                                tblLineEvent.LINE_NAME = line.LINE_NAME;
+
                                 tblLineEvent.EVENTDEF_ID = lineEvent.EVENTDEF_ID;
                                 tblLineEvent.EVENTDEF_NAME_EN = lineEvent.EVENTDEF_NAME_EN;
                                 tblLineEvent.EVENTDEF_NAME_VN = lineEvent.EVENTDEF_NAME_VN;
@@ -4484,6 +4564,10 @@ namespace iAndon.Biz.Logic
                             }
                             else
                             {
+                                //Sửa các trường định nghĩa
+                                tblLineWorking.LINE_CODE = line.LINE_CODE;
+                                tblLineWorking.LINE_NAME = line.LINE_NAME;
+
                                 //Đang trong quá trình thực thi
                                 tblLineWorking.DURATION = lineWorking.DURATION;
 
@@ -4514,6 +4598,10 @@ namespace iAndon.Biz.Logic
                             }
                             else
                             {
+                                //Sửa các trường định nghĩa
+                                tblLineStop.LINE_CODE = line.LINE_CODE;
+                                tblLineStop.LINE_NAME = line.LINE_NAME;
+
                                 //Đang trong quá trình thực thi
                                 tblLineStop.DURATION = lineStop.DURATION;
 
@@ -5694,6 +5782,16 @@ namespace iAndon.Biz.Logic
                 //Test for BreakTime
                 foreach (BreakTime breakTime in line.BreakTimes)
                 {
+                    //if (breakTime.Duration == 0)
+                    //{
+                    //    if (breakTime.StartTime < eventTime)
+                    //    {
+                    //        ChangeLineEvent(line.LINE_ID, breakTime.StartTime, line.LastEventDefId, line.LastReasonId, true);
+                    //    }
+                    //    continue;
+                    //}    
+
+                    //Giữ logic ban đầu. Phần Duration = 0 thì đã có xử lý trên
                     tblLineEvent = line.LineEvents.LastOrDefault(x => !x.FINISH.HasValue);
 
                     if (breakTime.StartTime < eventTime)
@@ -5715,7 +5813,7 @@ namespace iAndon.Biz.Logic
 
                     if (breakTime.FinishTime <= eventTime)
                     {
-                        if (tblLineEvent.START < breakTime.FinishTime && tblLineEvent.EVENTDEF_ID == Consts.EVENTDEF_BREAK)
+                        if (tblLineEvent.START <= breakTime.FinishTime && tblLineEvent.EVENTDEF_ID == Consts.EVENTDEF_BREAK)
                         {
                             //Đang nghỉ thì cho kết thúc nghỉ và trở lại trạng thái trước đó
                             //_Logger.Write(_LogCategory, $"Line {LineId} - Finish Break: Start: {breakTime.StartTime:HH:mm:ss} Finish: {breakTime.FinishTime:HH:mm:ss}", LogType.Debug);
@@ -5922,81 +6020,101 @@ namespace iAndon.Biz.Logic
             try
             {
                 Line line = _Lines.FirstOrDefault(l => l.LINE_ID == LineId);
+                WorkPlan workPlan = line.WorkPlan;
+                DateTime _start = workPlan.PlanStart;
+                DateTime _finish = workPlan.PlanFinish;
 
                 if (isReset)
                 {
                     line.TimeDatas = null;
-                }
-                else
-                {
-                    if (line.TimeDatas != null) { return; }
-                }
 
-                DateTime _start = line.WorkPlan.PlanStart;
-                DateTime _finish = line.WorkPlan.PlanFinish;
-                WorkPlan workPlan = line.WorkPlan;
-
-                //Khởi tạo bộ BreakTime
-                line.BreakTimes.Clear();
-                List<DM_MES_BREAK_TIME> breakTimes = _BreakTimes.Where(x => x.SHIFT_ID == workPlan.SHIFT_ID).ToList();
-                //DateTime eventTime = Num2Time(workPlan.Day, DayArchive);
-                foreach (DM_MES_BREAK_TIME breakTime in breakTimes)
-                {
-                    string _apply = breakTime.APPLY_LINES;
-                    if (!_apply.StartsWith(";")) _apply = ";" + _apply;
-                    if (!_apply.EndsWith(";")) _apply += ";";
-
-                    if (_apply.Contains(";" + line.LINE_ID + ";"))
+                    //Khởi tạo bộ BreakTime
+                    line.BreakTimes.Clear();
+                    List<DM_MES_BREAK_TIME> breakTimes = _BreakTimes.Where(x => x.SHIFT_ID == workPlan.SHIFT_ID).ToList();
+                    //DateTime eventTime = Num2Time(workPlan.Day, DayArchive);
+                    foreach (DM_MES_BREAK_TIME breakTime in breakTimes)
                     {
-                        BreakTime time = new BreakTime();
-                        time.Cast(breakTime);
-                        line.BreakTimes.Add(time);
-                    }
-                }
-                line.BreakTimes = line.BreakTimes.OrderBy(x => x.StartTime).ToList();
+                        string _apply = breakTime.APPLY_LINES;
+                        if (!_apply.StartsWith(_SplitListCharacter)) _apply = _SplitListCharacter + _apply;
+                        if (!_apply.EndsWith(_SplitListCharacter)) _apply += _SplitListCharacter;
 
+                        if (_apply.Contains(_SplitListCharacter + line.LINE_ID + _SplitListCharacter))
+                        {
+                            BreakTime time = new BreakTime();
+                            time.Cast(breakTime);
+                            line.BreakTimes.Add(time);
+                        }
+                    }
+                    line.BreakTimes = line.BreakTimes.OrderBy(x => x.StartTime).ToList();
+
+                }
+                //else
+                //{
+                //    if (line.TimeDatas != null) { return; }
+                //}
 
                 //Khởi tạo TimeData
                 if (line.TimeDatas == null)
                 {
-                    //Bắt đầu build TimeSlot
-                    List<BreakTime> tblBreakTimes = line.BreakTimes.Where(x => x.SHIFT_ID == workPlan.SHIFT_ID).ToList();
-                    List<TimeData> times = new List<TimeData>();
-                    DateTime _startTimeSlot = _start;
-                    int i = Consts.START_TIME_SLOT;
-                    decimal _duration = 0;
-                    foreach (BreakTime tblBreakTime in tblBreakTimes)
-                    {
-                        DateTime _finishTimeSlot = ProcessTimeInWorkPlan(tblBreakTime.START_HOUR, tblBreakTime.START_MINUTE, workPlan.DAY);
-                        _duration = (decimal)(_finishTimeSlot - _startTimeSlot).TotalSeconds;
-                        TimeData _time = new TimeData()
-                        {
-                            TimeName = Convert.ToChar(i).ToString(),
-                            Start = _startTimeSlot,
-                            Finish = _finishTimeSlot,
-                            Duration = _duration,
-                        };
-                        times.Add(_time);
-                        _startTimeSlot = ProcessTimeInWorkPlan(tblBreakTime.FINISH_HOUR, tblBreakTime.FINISH_MINUTE, workPlan.DAY);
-                        i++;
-
-                        tblBreakTime.StartTime = _finishTimeSlot;
-                        tblBreakTime.FinishTime = _startTimeSlot;
-                        tblBreakTime.Duration = (decimal)(_startTimeSlot - _finishTimeSlot).TotalSeconds;
-
-                    }
-                    //Thằng cuối cùng
-                    _duration = (decimal)(_finish - _startTimeSlot).TotalSeconds;
-                    TimeData time = new TimeData()
+                    line.TimeDatas = new List<TimeData>();
+                }
+                //Bắt đầu build TimeSlot
+                List<BreakTime> tblBreakTimes = line.BreakTimes.Where(x => x.SHIFT_ID == workPlan.SHIFT_ID).ToList();
+                DateTime _startTimeSlot = _start;
+                int i = Consts.START_TIME_SLOT;
+                decimal _duration = 0;
+                foreach (BreakTime tblBreakTime in tblBreakTimes)
+                {
+                    DateTime _finishTimeSlot = ProcessTimeInWorkPlan(tblBreakTime.START_HOUR, tblBreakTime.START_MINUTE, workPlan.DAY);
+                    _duration = (decimal)(_finishTimeSlot - _startTimeSlot).TotalSeconds;
+                    TimeData _time = new TimeData()
                     {
                         TimeName = Convert.ToChar(i).ToString(),
                         Start = _startTimeSlot,
-                        Finish = _finish,
+                        Finish = _finishTimeSlot,
                         Duration = _duration,
                     };
-                    times.Add(time);
-                    line.TimeDatas = times;
+                    TimeData _timeCheck = line.TimeDatas.FirstOrDefault(x => x.TimeName == _time.TimeName);
+                    if (_timeCheck == null)
+                    {
+                        line.TimeDatas.Add(_time);
+                    }
+                    else
+                    {
+                        _timeCheck.Start = _time.Start;
+                        _timeCheck.Finish = _time.Finish;
+                        _timeCheck.Duration = _time.Duration;
+                    }    
+                    _startTimeSlot = ProcessTimeInWorkPlan(tblBreakTime.FINISH_HOUR, tblBreakTime.FINISH_MINUTE, workPlan.DAY);
+                    i++;
+
+                    tblBreakTime.StartTime = _finishTimeSlot;
+                    tblBreakTime.FinishTime = _startTimeSlot;
+                    tblBreakTime.Duration = (decimal)(_startTimeSlot - _finishTimeSlot).TotalSeconds;
+
                 }
+                //Thằng cuối cùng
+                _duration = (decimal)(_finish - _startTimeSlot).TotalSeconds;
+                TimeData lasttime = new TimeData()
+                {
+                    TimeName = Convert.ToChar(i).ToString(),
+                    Start = _startTimeSlot,
+                    Finish = _finish,
+                    Duration = _duration,
+                };
+
+                TimeData _lastCheck = line.TimeDatas.FirstOrDefault(x => x.TimeName == lasttime.TimeName);
+                if (_lastCheck == null)
+                {
+                    line.TimeDatas.Add(lasttime);
+                }
+                else
+                {
+                    _lastCheck.Start = lasttime.Start;
+                    _lastCheck.Finish = lasttime.Finish;
+                    _lastCheck.Duration = lasttime.Duration;
+                }
+
             }
             catch (Exception ex)
             {
@@ -6178,10 +6296,10 @@ namespace iAndon.Biz.Logic
                 foreach (DM_MES_BREAK_TIME tblBreakTime in breakTimes)
                 {
                     string _apply = tblBreakTime.APPLY_LINES;
-                    if (!_apply.StartsWith(",")) _apply = "," + _apply;
-                    if (!_apply.EndsWith(",")) _apply += ",";
+                    if (!_apply.StartsWith(_SplitListCharacter)) _apply = _SplitListCharacter + _apply;
+                    if (!_apply.EndsWith(_SplitListCharacter)) _apply += _SplitListCharacter;
 
-                    if (_apply.Contains("," + LineId + ","))
+                    if (_apply.Contains(_SplitListCharacter + LineId + _SplitListCharacter))
                     {
                         BreakTime breakTime = new BreakTime();
                         breakTime.Cast(tblBreakTime, _day);
@@ -6195,6 +6313,71 @@ namespace iAndon.Biz.Logic
             }
             return model;
         }
+
+        private string UpdateBreakTimes( DateTime eventTime)
+        {
+            string _linesUpdated = "";
+            try
+            {
+                foreach (Line line in _Lines)
+                {
+                    if (line == null) continue;
+                    if (line.WorkPlan == null) continue;
+
+                    List<DM_MES_BREAK_TIME> breakTimes = _BreakTimes.Where(x => x.SHIFT_ID == line.WorkPlan.SHIFT_ID).ToList();
+
+                    foreach (DM_MES_BREAK_TIME tblBreakTime in breakTimes)
+                    {
+                        BreakTime _breakTime = new BreakTime();
+                        _breakTime.Cast(tblBreakTime, line.WorkPlan.DAY);
+
+                        //Chỉ nhặt ra những thằng nào > eventTime thôi
+                        if (_breakTime.StartTime < eventTime && _breakTime.FinishTime < eventTime)
+                        {
+                            continue;
+                        }
+
+                        string _apply = _breakTime.APPLY_LINES;
+                        if (!_apply.StartsWith(_SplitListCharacter)) _apply = _SplitListCharacter + _apply;
+                        if (!_apply.EndsWith(_SplitListCharacter)) _apply += _SplitListCharacter;
+
+                        if (_apply.Contains(_SplitListCharacter + line.LINE_ID + _SplitListCharacter))
+                        {
+                            BreakTime _test = line.BreakTimes.FirstOrDefault(x => x.BREAK_ID == _breakTime.BREAK_ID);
+                            //Kiểm tra khác thì mới cập nhật
+                            if (_test.StartTime != _breakTime.StartTime || _test.FinishTime != _breakTime.FinishTime)
+                            {
+                                string _strCheck = _SplitListCharacter + line.LINE_ID + _SplitListCharacter;
+
+                                if (!_linesUpdated.Contains(_strCheck))
+                                {
+                                    _linesUpdated += _strCheck;
+                                    ////Thay 2 ký tự thành 1 ký tự
+                                    //_linesUpdated = _linesUpdated.Replace(_SplitListCharacter + _SplitListCharacter, _SplitListCharacter);
+                                }
+                                if (_test == null)
+                                {
+                                    line.BreakTimes.Add(_breakTime);
+                                }
+                                else
+                                {
+                                    _test.Cast(_breakTime);
+                                }
+                            }
+                        }
+                    }
+
+                    line.BreakTimes = line.BreakTimes.OrderBy(x => x.StartTime).ToList();
+                }
+                return _linesUpdated;
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Reload BreakTime Error: {ex}", LogType.Error);
+            }
+            return _linesUpdated;
+        }
+
         private decimal GetBreakDuration(string LineId, DateTime _start, DateTime _finish)
         {
             decimal _duration = 0;
@@ -6499,6 +6682,19 @@ namespace iAndon.Biz.Logic
                     //_dbContext.MES_RAW_UPDATE_CONFIG.RemoveRange(actualRawDatas);
                     _dbContext.SaveChanges();
 
+
+                    //Đọc lại phần update của MES_DM_LINE
+                    List<DM_MES_LINE> _updateLines = _dbContext.DM_MES_LINE.ToList();
+                    foreach(DM_MES_LINE _updateLine in _updateLines)
+                    {
+                        Line line = _Lines.FirstOrDefault(x=>x.LINE_ID == _updateLine.LINE_ID);
+                        if (line != null)
+                        {
+                            line.LINE_CODE = _updateLine.LINE_CODE;
+                            line.LINE_NAME = _updateLine.LINE_NAME;
+                            line.DESCRIPTION = _updateLine.DESCRIPTION;
+                        }    
+                    }    
                 }
             }
             catch (Exception ex)

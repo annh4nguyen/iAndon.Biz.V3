@@ -163,6 +163,25 @@ namespace iAndon.Biz.Logic.Models
             {
                 this.FinishTime = this.FinishTime.AddDays(1);
             }
+
+            this.Duration = (decimal) (this.FinishTime - this.StartTime).TotalSeconds;
+
+            this.APPLY_LINES = breakTime.APPLY_LINES;
+        }
+
+        public void Cast(BreakTime breakTime)
+        {
+            this.BREAK_ID = breakTime.BREAK_ID;
+            this.SHIFT_ID = breakTime.SHIFT_ID;
+            this.BREAK_NAME = breakTime.BREAK_NAME;
+            this.START_HOUR = breakTime.START_HOUR;
+            this.START_MINUTE = breakTime.START_MINUTE;
+            this.FINISH_HOUR = breakTime.FINISH_HOUR;
+            this.FINISH_MINUTE = breakTime.FINISH_MINUTE;
+            this.StartTime = breakTime.StartTime;
+            this.FinishTime = breakTime.FinishTime;
+            this.Duration = breakTime.Duration;
+            this.APPLY_LINES = breakTime.APPLY_LINES;
         }
     }
 

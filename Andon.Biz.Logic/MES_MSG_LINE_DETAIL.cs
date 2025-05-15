@@ -23,7 +23,7 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_CODE { get; set; }
         public string PRODUCT_NAME { get; set; }
         public decimal PLAN_QUANTITY { get; set; }
-        public int HEAD_COUNT { get; set; }
+        public short HEAD_COUNT { get; set; }
         public decimal TAKT_TIME { get; set; }
         public decimal UPH { get; set; }
         public decimal UPPH { get; set; }
@@ -35,8 +35,8 @@ namespace iAndon.Biz.Logic
         public decimal TIME_RATE { get; set; }
         public decimal QUALITY_RATE { get; set; }
         public decimal OEE { get; set; }
-        public int INDEX_DETAIL { get; set; }
-        public int STATUS { get; set; }
+        public short INDEX_DETAIL { get; set; }
+        public short STATUS { get; set; }
         public string STATUS_NAME { get; set; }
         public System.DateTime TIME_UPDATED { get; set; }
     }
