@@ -58,6 +58,9 @@ namespace iAndon.Biz.Logic
         public static string EVENTDEF_PLAN_COLOR = "#FFF";
         //====================================================
 
+        public static string CHANGE_ADDNEW = "ADDNEW";
+        public static string CHANGE_UPDATE = "UPDATE";
+        public static string CHANGE_DELETE = "DELETE";
 
         public static short CUSTOMER_ID = 3;
         public static short FACTORY_ID = 1;

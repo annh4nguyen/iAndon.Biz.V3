@@ -22,10 +22,11 @@ namespace iAndon.Biz.Logic
         public string PRODUCT_UNIT { get; set; }
         public string IMG_URL { get; set; }
         public decimal CYCLE_TIME { get; set; }
+        public decimal RUNNING_CYCLE_TIME { get; set; }
         public decimal CALCULATED_CYCLE_TIME { get; set; }
         public decimal PERFORMANCE { get; set; }
-        public int HEADCOUNT { get; set; }
         public decimal ROUTING { get; set; }
+        public int HEADCOUNT { get; set; }
         public bool ACTIVE { get; set; }
     }
 }

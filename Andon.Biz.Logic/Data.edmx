@@ -133,6 +133,7 @@
           <Property Name="PRODUCT_UNIT" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="IMG_URL" Type="nvarchar" MaxLength="500" Nullable="false" />
           <Property Name="CYCLE_TIME" Type="money" Nullable="false" />
+          <Property Name="RUNNING_CYCLE_TIME" Type="money" Nullable="false" />
           <Property Name="CALCULATED_CYCLE_TIME" Type="money" Nullable="false" />
           <Property Name="PERFORMANCE" Type="money" Nullable="false" />
           <Property Name="ROUTING" Type="decimal" Precision="18" Scale="6" Nullable="false" />
@@ -622,8 +623,6 @@
           <Property Name="ACTUAL_NG_QUANTITY" Type="decimal" Precision="18" Scale="0" Nullable="false" />
           <Property Name="ACTUAL_TAKT_TIME" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="ACTUAL_HEAD_COUNT" Type="smallint" Nullable="false" />
-          <Property Name="PLAN_ROUTING" Type="decimal" Precision="18" Scale="6" Nullable="false" />
-          <Property Name="ACTUAL_ROUTING" Type="decimal" Precision="18" Scale="6" Nullable="false" />
           <Property Name="ACTUAL_UPH" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="ACTUAL_UPPH" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="PLAN_RATE" Type="decimal" Precision="18" Scale="2" Nullable="false" />
@@ -633,6 +632,8 @@
           <Property Name="OEE" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="RESULT" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="STATUS" Type="smallint" Nullable="false" />
+          <Property Name="PLAN_ROUTING" Type="decimal" Precision="18" Scale="6" Nullable="false" />
+          <Property Name="ACTUAL_ROUTING" Type="decimal" Precision="18" Scale="6" Nullable="false" />
         </EntityType>
         <EntityType Name="MES_REPORT_LINE_DETAIL">
           <Key>
@@ -735,8 +736,8 @@
           <Property Name="PLAN_DATE" Type="datetime" Nullable="false" />
           <Property Name="SHIFT_ID" Type="nvarchar" MaxLength="20" Nullable="false" />
           <Property Name="PLAN_HOUR" Type="decimal" Precision="18" Scale="2" Nullable="false" />
-          <Property Name="WORKING_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="STATUS" Type="smallint" Nullable="false" />
+          <Property Name="WORKING_ID" Type="nvarchar" MaxLength="50" Nullable="false" />
         </EntityType>
         <EntityType Name="MES_WORK_PLAN_DETAIL">
           <Key>
@@ -872,7 +873,6 @@
           <EntitySet Name="MES_MSG_LINE_STOP" EntityType="DomainDbContext.MES_MSG_LINE_STOP" />
           <EntitySet Name="MES_MSG_LINE_WORKING" EntityType="DomainDbContext.MES_MSG_LINE_WORKING" />
           <EntitySet Name="MES_WORK_PLAN" EntityType="DomainDbContext.MES_WORK_PLAN" />
-          <EntitySet Name="DM_MES_PRODUCT" EntityType="DomainDbContext.DM_MES_PRODUCT" />
           <EntitySet Name="MES_REPORT_LINE" EntityType="DomainDbContext.MES_REPORT_LINE" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL" />
           <EntitySet Name="MES_LINE_TIME_PRODUCTION" EntityType="DomainDbContext.MES_LINE_TIME_PRODUCTION" />
@@ -880,6 +880,7 @@
           <EntitySet Name="MES_MSG_LINE_PRODUCT" EntityType="DomainDbContext.MES_MSG_LINE_PRODUCT" />
           <EntitySet Name="MES_REPORT_LINE_DETAIL" EntityType="DomainDbContext.MES_REPORT_LINE_DETAIL" />
           <EntitySet Name="MES_WORK_PLAN_DETAIL_HISTORY" EntityType="DomainDbContext.MES_WORK_PLAN_DETAIL_HISTORY" />
+          <EntitySet Name="DM_MES_PRODUCT" EntityType="DomainDbContext.DM_MES_PRODUCT" />
         </EntityContainer>
         <EntityType Name="DM_MES_BREAK_TIME">
           <Key>
@@ -1400,24 +1401,6 @@
           <Property Name="WORKING_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="STATUS" Type="Int16" Nullable="false" />
         </EntityType>
-        <EntityType Name="DM_MES_PRODUCT">
-          <Key>
-            <PropertyRef Name="PRODUCT_ID" />
-          </Key>
-          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_DESCRIPTION" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_CATEGORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="PRODUCT_UNIT" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="IMG_URL" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
-          <Property Name="CYCLE_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
-          <Property Name="CALCULATED_CYCLE_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
-          <Property Name="PERFORMANCE" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
-          <Property Name="HEADCOUNT" Type="Int32" Nullable="false" />
-          <Property Name="ROUTING" Type="Decimal" Nullable="false" Precision="18" Scale="6" />
-          <Property Name="ACTIVE" Type="Boolean" Nullable="false" />
-        </EntityType>
         <EntityType Name="MES_REPORT_LINE">
           <Key>
             <PropertyRef Name="REPORT_LINE_ID" />
@@ -1670,6 +1653,25 @@
           <Property Name="USER_ACTION" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
           <Property Name="USER_ID" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
           <Property Name="UPDATED" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="DM_MES_PRODUCT">
+          <Key>
+            <PropertyRef Name="PRODUCT_ID" />
+          </Key>
+          <Property Name="PRODUCT_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CODE" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_NAME" Type="String" Nullable="false" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_DESCRIPTION" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_CATEGORY_ID" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="PRODUCT_UNIT" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="IMG_URL" Type="String" Nullable="false" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="CYCLE_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="RUNNING_CYCLE_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="CALCULATED_CYCLE_TIME" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="PERFORMANCE" Type="Decimal" Nullable="false" Precision="19" Scale="4" />
+          <Property Name="ROUTING" Type="Decimal" Nullable="false" Precision="18" Scale="6" />
+          <Property Name="HEADCOUNT" Type="Int32" Nullable="false" />
+          <Property Name="ACTIVE" Type="Boolean" Nullable="false" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -2227,25 +2229,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="DM_MES_PRODUCT">
-            <EntityTypeMapping TypeName="DomainDbContext.DM_MES_PRODUCT">
-              <MappingFragment StoreEntitySet="DM_MES_PRODUCT">
-                <ScalarProperty Name="ACTIVE" ColumnName="ACTIVE" />
-                <ScalarProperty Name="ROUTING" ColumnName="ROUTING" />
-                <ScalarProperty Name="HEADCOUNT" ColumnName="HEADCOUNT" />
-                <ScalarProperty Name="PERFORMANCE" ColumnName="PERFORMANCE" />
-                <ScalarProperty Name="CALCULATED_CYCLE_TIME" ColumnName="CALCULATED_CYCLE_TIME" />
-                <ScalarProperty Name="CYCLE_TIME" ColumnName="CYCLE_TIME" />
-                <ScalarProperty Name="IMG_URL" ColumnName="IMG_URL" />
-                <ScalarProperty Name="PRODUCT_UNIT" ColumnName="PRODUCT_UNIT" />
-                <ScalarProperty Name="PRODUCT_CATEGORY_ID" ColumnName="PRODUCT_CATEGORY_ID" />
-                <ScalarProperty Name="PRODUCT_DESCRIPTION" ColumnName="PRODUCT_DESCRIPTION" />
-                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
-                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
-                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="MES_REPORT_LINE">
             <EntityTypeMapping TypeName="DomainDbContext.MES_REPORT_LINE">
               <MappingFragment StoreEntitySet="MES_REPORT_LINE">
@@ -2503,6 +2486,26 @@
                 <ScalarProperty Name="WORK_PLAN_ID" ColumnName="WORK_PLAN_ID" />
                 <ScalarProperty Name="WORK_PLAN_DETAIL_ID" ColumnName="WORK_PLAN_DETAIL_ID" />
                 <ScalarProperty Name="HISTORY_ID" ColumnName="HISTORY_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DM_MES_PRODUCT">
+            <EntityTypeMapping TypeName="DomainDbContext.DM_MES_PRODUCT">
+              <MappingFragment StoreEntitySet="DM_MES_PRODUCT">
+                <ScalarProperty Name="ACTIVE" ColumnName="ACTIVE" />
+                <ScalarProperty Name="HEADCOUNT" ColumnName="HEADCOUNT" />
+                <ScalarProperty Name="ROUTING" ColumnName="ROUTING" />
+                <ScalarProperty Name="PERFORMANCE" ColumnName="PERFORMANCE" />
+                <ScalarProperty Name="CALCULATED_CYCLE_TIME" ColumnName="CALCULATED_CYCLE_TIME" />
+                <ScalarProperty Name="RUNNING_CYCLE_TIME" ColumnName="RUNNING_CYCLE_TIME" />
+                <ScalarProperty Name="CYCLE_TIME" ColumnName="CYCLE_TIME" />
+                <ScalarProperty Name="IMG_URL" ColumnName="IMG_URL" />
+                <ScalarProperty Name="PRODUCT_UNIT" ColumnName="PRODUCT_UNIT" />
+                <ScalarProperty Name="PRODUCT_CATEGORY_ID" ColumnName="PRODUCT_CATEGORY_ID" />
+                <ScalarProperty Name="PRODUCT_DESCRIPTION" ColumnName="PRODUCT_DESCRIPTION" />
+                <ScalarProperty Name="PRODUCT_NAME" ColumnName="PRODUCT_NAME" />
+                <ScalarProperty Name="PRODUCT_CODE" ColumnName="PRODUCT_CODE" />
+                <ScalarProperty Name="PRODUCT_ID" ColumnName="PRODUCT_ID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
