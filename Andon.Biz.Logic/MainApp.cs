@@ -1,28 +1,36 @@
-﻿using iAndon.MSG;
-using iAndon.Biz.Logic.Models;
-using Avani.Helper;
-using EasyNetQ;
-using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure.Interception;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Net.WebSockets;
+using System.Numerics;
+using System.Reflection.Emit;
+using System.Runtime.Remoting.Contexts;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
-using System.Net.Http.Headers;
+using Avani.Helper;
+using EasyNetQ;
+using EasyNetQ.Logging;
+using iAndon.Biz.Logic.Models;
+using iAndon.MSG;
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Packets;
+using MQTTnet.Protocol;
+
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections;
-using System.Reflection.Emit;
-using System.Numerics;
-using System.Net;
-using System.Data.Entity;
-using System.Runtime.Remoting.Contexts;
-using System.Data.Entity.Infrastructure.Interception;
 
 namespace iAndon.Biz.Logic
 {
@@ -35,6 +43,20 @@ namespace iAndon.Biz.Logic
         private string _RabbitMQUser = ConfigurationManager.AppSettings["RabbitMQ.User"];
         private string _RabbitMQPassword = ConfigurationManager.AppSettings["RabbitMQ.Password"];
         private string _CustomerId = ConfigurationManager.AppSettings["CustomerId"];
+
+        private string _MQTTHost = ConfigurationManager.AppSettings["MQTT.Host"];
+        private int _MQTTPort = int.Parse(ConfigurationManager.AppSettings["MQTT.Port"]);
+        private string _MQTTTopic = ConfigurationManager.AppSettings["MQTT.Topic"];
+        private string _MQTTUser = ConfigurationManager.AppSettings["MQTT.User"];
+        private string _MQTTPassword = ConfigurationManager.AppSettings["MQTT.Password"];
+        private string _MQTTGateways = ConfigurationManager.AppSettings["MQTT.Gateways"];
+        private string _MQTTDevicesType = ConfigurationManager.AppSettings["MQTT.DevicesType"];
+
+        private Queue<IO_Message> _IO_DataQueue = new Queue<IO_Message>();
+        private Queue<IO_Message> _IO_ProcessQueue = new Queue<IO_Message>();
+
+        private List<IO_Message> _Devices = new List<IO_Message>();
+
 
         private string _SMTP_Host = ConfigurationManager.AppSettings["SMTP.Host"];
         private int _SMTP_Port = int.Parse(ConfigurationManager.AppSettings["SMTP.Port"]);
@@ -143,6 +165,14 @@ namespace iAndon.Biz.Logic
         private static IBus _EventBus = null;
         private static IBus _SyncBus = null;
 
+        private static MqttFactory SubFactory = null;
+        private static MqttClient SubClient = null;
+
+        private static MqttFactory PubFactory = null;
+        private static MqttClient PubClient = null;
+
+
+
         //Timer
         private System.Timers.Timer _TimerProccessQueue = new System.Timers.Timer();
         private System.Timers.Timer _TimerProccessMessage = new System.Timers.Timer();
@@ -204,13 +234,7 @@ namespace iAndon.Biz.Logic
                 _Logger.Write(_LogCategory, $"iAndon Biz Service is Starting!", LogType.Info);
 
                 InitData();
-                //StartGetMessage();
-                if (_isProcessMessage)
-                {
-                    _TimerProccessMessage.Interval = _MessageInterval;
-                    _TimerProccessMessage.Elapsed += _TimerProccessMessage_Elapsed;
-                    _TimerProccessMessage.Start();
-                }
+ 
 
                 //_TimerProccessMessage.Interval = _MessageInterval;
                 //_TimerProccessMessage.Elapsed += _TimerProccessMessage_Elapsed;
@@ -219,6 +243,14 @@ namespace iAndon.Biz.Logic
                 _TimerProccessWork.Interval = _ProcessInterval;
                 _TimerProccessWork.Elapsed += _TimerProccessWork_Elapsed;
                 _TimerProccessWork.Start();
+
+                //StartGetMessage();
+                if (_isProcessMessage)
+                {
+                    _TimerProccessMessage.Interval = _MessageInterval;
+                    _TimerProccessMessage.Elapsed += _TimerProccessMessage_Elapsed;
+                    _TimerProccessMessage.Start();
+                }
 
                 //_TimerReload.Interval = _ReloadInterval;
                 //_TimerReload.Elapsed += _TimerReload_Elapsed;
@@ -251,13 +283,12 @@ namespace iAndon.Biz.Logic
                 _TimerDisplay.Start();
 
 
-                if (_isSendControlMessage)
-                {
-                    _TimerProccessQueue.Interval = _QueueInterval;
-                    _TimerProccessQueue.Elapsed += _TimerProccessQueue_Elapsed;
-                    _TimerProccessQueue.Start();
-                }
-
+                //if (_isSendControlMessage)
+                //{
+                //    _TimerProccessQueue.Interval = _QueueInterval;
+                //    _TimerProccessQueue.Elapsed += _TimerProccessQueue_Elapsed;
+                //    _TimerProccessQueue.Start();
+                //}
 
                 _Logger.Write(_LogCategory, $"iAndon Biz Service is Start Completed!", LogType.Info);
 
@@ -271,7 +302,8 @@ namespace iAndon.Biz.Logic
         {
             try
             {
-                StopGetMessage();
+                //StopGetMessage();
+                MQTTStopGetMessage();
                 _TimerProccessQueue.Stop();
                 _TimerProccessWork.Stop();
                 _TimerProccessArchive.Stop();
@@ -326,7 +358,7 @@ namespace iAndon.Biz.Logic
             timer.Stop();
             try
             {
-                ProcessSendControlMessage();        
+                //ProcessSendControlMessageAsync();        
             }
             catch (Exception ex)
             {
@@ -347,13 +379,11 @@ namespace iAndon.Biz.Logic
                 {
                     _Logger.Write(_LogCategory, $"Error When Process Data, Ignore and Continue...", LogType.Info);
                     IsError = false;
-                    StopGetMessage();
+                    //StopGetMessage();
+                    MQTTStopGetMessage();
                 }
-                //else
-                //{
-                //    StartGetMessage();
-                //}
-                StartGetMessage();
+                MQTTStartGetMessage();
+                //StartGetMessage();
             }
             catch (Exception ex)
             {
@@ -538,6 +568,23 @@ namespace iAndon.Biz.Logic
                         }    
 
                         _Lines.Add(line);
+
+                        //Thêm mỗi line là 1 Device
+                        IO_Message _device = new IO_Message()
+                        {
+                            Id = int.Parse(line.LINE_ID),
+                            IsConnect = false,
+                            Timestamp = DateTime.Now,
+                            Input01 = 0,
+                            Input02 = 0,
+                            Input03 = 0,
+                            Input04 = 0,
+                            Output01 = 0,
+                            Output02 = 0,
+                            Output03 = 0,
+                            Output04 = 0
+                        };
+                        _Devices.Add(_device);
                     }
 
                     //Tải kế hoạch làm vliệc ở đây --> Làm bước cuối cùng
@@ -594,6 +641,25 @@ namespace iAndon.Biz.Logic
                 _Logger.Write(_LogCategory, $"Start Get Message M3 Error: {ex}", LogType.Error);
             }
         }
+
+        private void MQTTStartGetMessage()
+        {
+            //if (IsRunning) return;
+            IsRunning = true;
+            try
+            {
+                _Logger.Write(_LogCategory, $"MQTT Start Get Messages from EMQX", LogType.Info);
+
+                ConnectEMQXAsync();                    
+            }
+            catch (Exception ex)
+            {
+                IsRunning = false;
+                if (_EventBus != null) _EventBus.Dispose();
+                _EventBus = null;
+                _Logger.Write(_LogCategory, $"Start Get Message from EMQX Error: {ex}", LogType.Error);
+            }
+        }
         private void StopGetMessage()
         {
             try
@@ -611,6 +677,20 @@ namespace iAndon.Biz.Logic
                 _Logger.Write(_LogCategory, $"Stop Get Message Error: {ex}", LogType.Error);
             }
         }
+
+        private void MQTTStopGetMessage()
+        {
+            try
+            {
+                IsRunning = false;
+             
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"MQTT Stop Get Message Error: {ex}", LogType.Error);
+            }
+        }
+
         private void QueueMessage(Andon_MSG message)
         {
             try
@@ -1244,7 +1324,7 @@ namespace iAndon.Biz.Logic
 
                                     }
                                 }
-
+                                isCheck2UpdateBack = false; //REMFORDEMO - SEJONG
                                 if (isCheck2UpdateBack)
                                 {
                                     //Tính toán thời gian bắt đầu và Kết thúc cho ca chạy đó
@@ -1284,7 +1364,7 @@ namespace iAndon.Biz.Logic
                 //2025-05-15: Cho reload cả cấu hình luôn.
                 ReloadConfigurations();
                 //Cập nhật lại breakTime sau khi đã được Load
-                _LinesBreakTimesUpdated = UpdateBreakTimes(eventTime); //????
+                _LinesBreakTimesUpdated = UpdateBreakTimes(eventTime);
 
                 #region ReportLineDetail
                 //Cập nhật sản lượng nhập vào
@@ -1518,7 +1598,8 @@ namespace iAndon.Biz.Logic
                     {
                         try
                         {
-                            //if (line.WorkPlan == null) continue;
+                            if (line.WorkPlan == null) continue;
+                            if (line.Shift == null) continue;
                             //if (line.ReportLine == null) continue;
                             //if (line.ReportLineDetails.Count == 0) continue;
 
@@ -2274,7 +2355,190 @@ namespace iAndon.Biz.Logic
                 _Logger.Write(_LogCategory, $"Save Current Status to Database Error: {ex}", LogType.Error);
             }
         }
-        private void ProcessSendControlMessage()
+
+        private async Task ProcessSendControlMessageAsync()
+        {
+            try
+            {
+
+                //PreProcessMessage();
+
+                DateTime eventTime = DateTime.Now;
+                if (PubFactory == null)
+                {
+                    PubFactory = new MqttFactory();
+                }
+                if (PubClient == null)
+                {
+                    PubClient = (MqttClient)PubFactory.CreateMqttClient();
+                }
+
+                // Create MQTT client options
+                var options = new MqttClientOptionsBuilder()
+                    .WithTcpServer(_MQTTHost, _MQTTPort) // MQTT broker address and port
+                    .WithCredentials(_MQTTUser, _MQTTPassword) // Set username and password
+                    .WithClientId("client_biz_pub")
+                    .WithCleanSession()
+                    .Build();
+
+                //var connectResult = MqttClientConnectResultCode.;
+                if (!PubClient.IsConnected)
+                {
+                    await PubClient.ConnectAsync(options);
+                }
+                if (PubClient.IsConnected)
+                //if (connectResult.ResultCode == MqttClientConnectResultCode.Success)
+                {
+                    // Publisher to a topic
+                    string _topic = _MQTTTopic + "/request/" + _MQTTGateways;// + "/" + _MQTTDevicesType;
+
+
+                    foreach (IO_Message message in _Devices)
+                    {
+                        if (message.Id != 4) continue;
+
+                        Queue<MqttApplicationMessage> _queue = new Queue<MqttApplicationMessage>();
+
+                        string payload = "";
+                        //Xử lý lần lượt
+                            payload = BuildPayload(message.Id, 0, false);
+                            var applicationMessage = new MqttApplicationMessageBuilder()
+                                   .WithTopic(_topic)
+                                   .WithPayload(payload)
+                                   .Build();
+                        if (message.Output01 == 1)
+                        {
+                            _queue.Enqueue(applicationMessage);
+                        }
+                        //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
+                        if (message.Output02 == 1)
+                        {
+                            payload = BuildPayload(message.Id, 1, false);
+                            applicationMessage = new MqttApplicationMessageBuilder()
+                                   .WithTopic(_topic)
+                                   .WithPayload(payload)
+                                   .Build();
+                            _queue.Enqueue(applicationMessage);
+                        }
+                        //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
+                        if (message.Output03 == 1)
+                        {
+                            payload = BuildPayload(message.Id, 2, false);
+                            applicationMessage = new MqttApplicationMessageBuilder()
+                                   .WithTopic(_topic)
+                                   .WithPayload(payload)
+                                   .Build();
+                            _queue.Enqueue(applicationMessage);
+                        }
+                        //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
+                        if (message.Output04 == 1)
+                        {
+                            payload = BuildPayload(message.Id, 3, false);
+                            applicationMessage = new MqttApplicationMessageBuilder()
+                                   .WithTopic(_topic)
+                                   .WithPayload(payload)
+                                   .Build();
+                            _queue.Enqueue(applicationMessage);
+                        }
+                        //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
+                        //Xiên từng thằng 1
+
+                        if (message.Input03 == 1)
+                        {
+                            //payload = BuildPayload(message.Id, 2, true);
+                            //applicationMessage = new MqttApplicationMessageBuilder()
+                            //       .WithTopic(_topic)
+                            //       .WithPayload(payload)
+                            //       .Build();
+
+                            //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                        }
+                        else
+                        {
+                            if (message.Input02 == 1)
+                            {
+                                payload = BuildPayload(message.Id, 1, true);
+                                applicationMessage = new MqttApplicationMessageBuilder()
+                                       .WithTopic(_topic)
+                                       .WithPayload(payload)
+                                       .Build();
+
+                                _queue.Enqueue(applicationMessage);
+                                //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                            }
+                            else
+                            {
+                                if (message.Input01 == 0)
+                                {
+                                    payload = BuildPayload(message.Id, 2, true);
+                                    applicationMessage = new MqttApplicationMessageBuilder()
+                                           .WithTopic(_topic)
+                                           .WithPayload(payload)
+                                           .Build();
+                                    _queue.Enqueue(applicationMessage);
+
+                                    //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                                }
+                                else
+                                {
+                                    payload = BuildPayload(message.Id, 3, true);
+                                    applicationMessage = new MqttApplicationMessageBuilder()
+                                           .WithTopic(_topic)
+                                           .WithPayload(payload)
+                                           .Build();
+                                    _queue.Enqueue(applicationMessage);
+
+                                    //await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                                }
+
+                            }
+                        }
+
+
+                        if (!PubClient.IsConnected)
+                        {
+                            await PubClient.ConnectAsync(options);
+                        }
+
+                        while (_queue.Count > 0)
+                        {
+                            var m = _queue.Dequeue();
+                            await PubClient.PublishAsync(m);
+                            Thread.Sleep(5);
+                        }
+
+                    }
+                }
+                //await mqttClient.DisconnectAsync();
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Send Message Error: {ex}", LogType.Error);
+            }
+        }
+
+        public static string BuildPayload(int id, int output, bool state)
+        {
+            var msg = new OutputCommand
+            {
+                method = "setOutput",
+                @params = new OutputParams
+                {
+                    id = id,
+                    output = output,
+                    state = state
+                }
+            };
+
+            // Convert thành JSON string
+            return JsonConvert.SerializeObject(msg);
+        }
+        private void ProcessSendControlMessageRabbitMQ()
         {
             try
             {
@@ -2914,6 +3178,7 @@ namespace iAndon.Biz.Logic
                 //_Logger.Write(_LogCategory, $"Start calculate workplan factor for Line : {line.LINE_ID}", LogType.Debug);
 
                 //Tính toán thằng TimeData nếu có cập nhật break
+                /*
                 if (_LinesBreakTimesUpdated != "")
                 {
                     if (_LinesBreakTimesUpdated.Contains(_SplitListCharacter + line.LINE_ID + _SplitListCharacter))
@@ -2932,7 +3197,7 @@ namespace iAndon.Biz.Logic
                         _LinesBreakTimesUpdated.Replace(_SplitListCharacter + line.LINE_ID + _SplitListCharacter, "");
                     }
                 }
-
+                */
 
                 //Tính toán cho WorkPlan
                 foreach (MES_WORK_PLAN_DETAIL workPlanDetail in line.WorkPlan.WorkPlanDetails)
@@ -2955,8 +3220,10 @@ namespace iAndon.Biz.Logic
                 MES_REPORT_LINE reportLine = line.ReportLine;
 
                 MES_REPORT_LINE_DETAIL detailRunning = null;
-                
-      
+
+                CalculateWorkingDuration(line.LINE_ID, eventTime);
+
+
                 decimal _totalPlanDuration = 0;
                 //Tính các thằng chi tiết
                 if (line.ReportLineDetails.Count > 0)
@@ -3207,6 +3474,8 @@ namespace iAndon.Biz.Logic
                                 }
                             }
 
+                            /*
+                            REMFORDEMO-SEJONG
                             string _eventDefId = Consts.EVENTDEF_RUNNING;
 
                             if (detailRunning != null)
@@ -3226,6 +3495,7 @@ namespace iAndon.Biz.Logic
                                     ChangeLineEvent(line.LINE_ID, eventTime, Consts.EVENTDEF_NOPLAN);
                                 }
                             }
+                            */
 
     
                         }
@@ -3349,8 +3619,9 @@ namespace iAndon.Biz.Logic
 
                         }
                         #endregion
-
-                        #region LineTimeProduction
+/*
+                              REMFORDEMO-SEJONG
+                      #region LineTimeProduction
 
                         line.LineTimeProduction.PLANNING_DURATION = line.ReportLine.PLAN_TOTAL_DURATION / CalculateDurationFromSecond;
                         line.LineTimeProduction.RUNNING_DURATION = line.ReportLine.ACTUAL_WORKING_DURATION / CalculateDurationFromSecond;
@@ -3379,6 +3650,8 @@ namespace iAndon.Biz.Logic
                         line.LineTimeProduction.ACTUAL_WORKING_BY_PERFORMANCE = line.LineTimeProduction.RUNNING_DURATION + line.LineTimeProduction.STOP_DURATION + _OT_STOP;
 
                         #endregion
+
+*/
                     }
 
                 }
@@ -3479,7 +3752,7 @@ namespace iAndon.Biz.Logic
                 //}
 
                 //Tính toán thời gian bắt đầu và Kết thúc cho ca chạy đó
-                UpdateBackLineEvent(line.LINE_ID, eventTime);
+                //UpdateBackLineEvent(line.LINE_ID, eventTime);
 
             }
             catch (Exception ex)
@@ -4078,7 +4351,7 @@ namespace iAndon.Biz.Logic
                             newEventDefId = Consts.EVENTDEF_NOPLAN;
                         }
 
-                        ChangeLineEvent(line.LINE_ID, eventTime, newEventDefId, "", true); //Cứ kết thúc DETAIL thì split 
+                        //ChangeLineEvent(line.LINE_ID, eventTime, newEventDefId, "", true); //Cứ kết thúc DETAIL thì split 
 
                         //Finish luôn WorkPlanDetail
                         if (line.WorkPlan != null)
@@ -4250,7 +4523,7 @@ namespace iAndon.Biz.Logic
                             MES_WORK_PLAN tblWorkPlan = _dbContext.MES_WORK_PLAN.FirstOrDefault(wp => wp.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID);
                             if (tblWorkPlan == null)
                             {
-                                if (tblWorkPlan.STATUS != (short)PLAN_STATUS.Ready2Cancel)
+                                if (line.WorkPlan.STATUS != (short)PLAN_STATUS.Ready2Cancel)
                                 {
                                     tblWorkPlan = line.WorkPlan.Cast();
                                     _dbContext.MES_WORK_PLAN.Add(tblWorkPlan);
@@ -4270,7 +4543,7 @@ namespace iAndon.Biz.Logic
                                     _dbContext.Entry(tblWorkPlan).State = System.Data.Entity.EntityState.Modified;
                                 }
                             }
-                            //_Logger.Write(_LogCategory, $"Process Data: WorkPlan {line.WorkPlan.WORK_PLAN_ID} for Line {line.LINE_ID} - Status: {line.WorkPlan.STATUS}", LogType.Debug);
+                            _Logger.Write(_LogCategory, $"Process Data: Save WorkPlan {line.WorkPlan.WORK_PLAN_ID} for Line {line.LINE_ID} - Status: {line.WorkPlan.STATUS}", LogType.Debug);
 
                             //Check WorkPlanDetail
                             foreach (MES_WORK_PLAN_DETAIL planDetail in line.WorkPlan.WorkPlanDetails)
@@ -4318,7 +4591,7 @@ namespace iAndon.Biz.Logic
                                         _dbContext.Entry(tblWorkPlanDetail).State = System.Data.Entity.EntityState.Modified;
                                     }
                                 }
-                                //_Logger.Write(_LogCategory, $"Process Data: WorkPlan {line.WorkPlan.WORK_PLAN_ID} - WorkPlanDetail: {planDetail.WORK_PLAN_DETAIL_ID} - Status: {planDetail.STATUS}", LogType.Debug);
+                                _Logger.Write(_LogCategory, $"Process Data: Save detail - WorkPlan {line.WorkPlan.WORK_PLAN_ID} - WorkPlanDetail: {planDetail.WORK_PLAN_DETAIL_ID} - Status: {planDetail.STATUS}", LogType.Debug);
                             }
                             #region SaveReportLine
 
@@ -4371,13 +4644,13 @@ namespace iAndon.Biz.Logic
                                     _dbContext.Entry(reportLine).State = System.Data.Entity.EntityState.Modified;
 
                                 }
-                                //_Logger.Write(_LogCategory, $"Process Data: Save ReportLine - Line {line.LINE_ID} - WorkPlan {line.WorkPlan.WORK_PLAN_ID} - ReportLine {line.ReportLine.REPORT_LINE_ID}", LogType.Debug);
+                                _Logger.Write(_LogCategory, $"Process Data: Save ReportLine - Line {line.LINE_ID} - WorkPlan {line.WorkPlan.WORK_PLAN_ID} - ReportLine {line.ReportLine.REPORT_LINE_ID}", LogType.Debug);
                             }
 
                             #endregion
                             #region SaveReportLineDetail
 
-                            //_Logger.Write(_LogCategory, $"Process Data: Start save report line detail: Total Detail: Line {line.LINE_ID} - Total: {line.ReportLineDetails.Count}", LogType.Debug);
+                            _Logger.Write(_LogCategory, $"Process Data: Start save report line detail: Total Detail: Line {line.LINE_ID} - Total: {line.ReportLineDetails.Count}", LogType.Debug);
                             foreach (MES_REPORT_LINE_DETAIL reportLineDetail in line.ReportLineDetails)
                             {
                                 MES_REPORT_LINE_DETAIL detail = _dbContext.MES_REPORT_LINE_DETAIL.FirstOrDefault(l => l.REPORT_LINE_DETAIL_ID == reportLineDetail.REPORT_LINE_DETAIL_ID);
@@ -4454,7 +4727,7 @@ namespace iAndon.Biz.Logic
 
                         }
                         #region SaveLineEvent
-                        //_Logger.Write(_LogCategory, $"Process Data: Save Event Line {line.LINE_ID} - Total: {line.LineEvents.Count}", LogType.Debug);
+                        _Logger.Write(_LogCategory, $"Process Data: Save Event Line {line.LINE_ID} - Total: {line.LineEvents.Count}", LogType.Debug);
                         //Line Event
                         //Lấy ListEvent đang có sẵn
                         List<MES_LINE_EVENT> lstCurrentEvents = _dbContext.MES_LINE_EVENT.Where(x => x.LINE_ID == line.LINE_ID && x.WORK_PLAN_ID == line.WorkPlan.WORK_PLAN_ID).ToList();
@@ -4527,7 +4800,7 @@ namespace iAndon.Biz.Logic
 
                                 _dbContext.Entry(tblLineEvent).State = System.Data.Entity.EntityState.Modified;
 
-                                //_Logger.Write(_LogCategory, $"Save event {tblLineEvent.Id} for Line {line.Id}", LogType.Debug);
+                                _Logger.Write(_LogCategory, $"Save event {tblLineEvent.EVENT_ID} for Line {line.LINE_ID}", LogType.Debug);
                             }
                             lstCurrentEvents.RemoveAll(x => x.EVENT_ID == lineEvent.EVENT_ID);
                         }
@@ -4615,6 +4888,7 @@ namespace iAndon.Biz.Logic
                         {
                             _dbContext.MES_LINE_WORKING.RemoveRange(lstLineWorking);
                         }
+                        _Logger.Write(_LogCategory, $"Save Working for Line {line.LINE_ID}", LogType.Debug);
 
 
                         //LineSTOP
@@ -4650,6 +4924,7 @@ namespace iAndon.Biz.Logic
                         {
                             _dbContext.MES_LINE_STOP.RemoveRange(lstLineStop);
                         }
+                        _Logger.Write(_LogCategory, $"Save Stop Event for Line {line.LINE_ID}", LogType.Debug);
 
                         #endregion
 
@@ -4926,8 +5201,16 @@ namespace iAndon.Biz.Logic
                         }
                         else
                         {
-                            //Nếu giống cái cũ thì xem có split ra 2 cái không
-                            isFinishOldEvent = isAddNewEvent = isSplitSameEventDef;
+                            if (reasonId != oldEvent.REASON_ID)
+                            {
+                                isFinishOldEvent = true;
+                                isAddNewEvent = true;
+                            }
+                            else
+                            {
+                                //Nếu giống cái cũ thì xem có split ra 2 cái không
+                                isFinishOldEvent = isAddNewEvent = isSplitSameEventDef;
+                            }
                         }    
                     }
 
@@ -5280,28 +5563,36 @@ namespace iAndon.Biz.Logic
                     if (_UsePlanHourInWorkPlan)
                     {
                         _planDuration = 60 * 60 * workPlan.PLAN_HOUR;
-                    }    
+                    }
                     _status = workPlan.STATUS;
                 }
 
-                string _NoPlanEventDefId = Consts.EVENTDEF_NOPLAN;
+                string _EventDefId = Consts.EVENTDEF_NOPLAN;
                 ///Trường hợp không có kế hoạch thì có 1 Event NOPLAN chạy
-                if (workPlan == null)
+                if (workPlan != null)
                 {
-                    ChangeLineEvent(line.LINE_ID, _start, _NoPlanEventDefId);
-                }
-                else
-                {
-                    //Nếu có kế hoạch nhưng chưa có Kế hoạch nào chạy thì cũng tạo NOPLAN
-                    if(line.LineEvents.Count == 0)
+                    if (workPlan.WorkPlanDetails.Count > 0)
                     {
-                        ChangeLineEvent(line.LINE_ID, _start, _NoPlanEventDefId);
+                        _EventDefId = Consts.EVENTDEF_RUNNING;
                     }
                 }
+                ChangeLineEvent(line.LINE_ID, _start, _EventDefId);
 
-                //Line Working
-                #region LineWorking
-                if (line.LineWorkings == null)
+                    ///REMFORDEMO-SEJONG
+                    /*
+                    else
+                    {
+                        //Nếu có kế hoạch nhưng chưa có Kế hoạch nào chạy thì cũng tạo NOPLAN
+                        if(line.LineEvents.Count == 0)
+                        {
+                            ChangeLineEvent(line.LINE_ID, _start, _NoPlanEventDefId);
+                        }
+                    }
+                    */
+
+                    //Line Working
+                    #region LineWorking
+                    if (line.LineWorkings == null)
                 {
                     line.LineWorkings = new List<MES_LINE_WORKING>();
                 }
@@ -6551,6 +6842,34 @@ namespace iAndon.Biz.Logic
 
                     }
                 }
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Get Stop duration and Break for Line {LineId} Error: {ex}", LogType.Error);
+            }
+            return _stopDuration;
+
+        }
+
+        private void CalculateWorkingDuration(string LineId, DateTime eventTime)
+        {
+            try
+            {
+                Line line = _Lines.FirstOrDefault(x => x.LINE_ID == LineId);
+                if (line.LineEvents.Count == 0) return;
+
+                foreach (MES_LINE_EVENT tblLineEvent in line.LineEvents)
+                {
+                    DateTime _eventFinish = eventTime;
+                    if (tblLineEvent.FINISH.HasValue)
+                    {
+                        _eventFinish = (DateTime)tblLineEvent.FINISH;
+                    }
+
+                    tblLineEvent.TOTAL_DURATION = (decimal)(_eventFinish - tblLineEvent.START).TotalSeconds;
+                }
+
                 //Tính từng loại hoạt động
                 foreach (MES_LINE_WORKING lineRunning in line.LineWorkings)
                 {
@@ -6579,8 +6898,6 @@ namespace iAndon.Biz.Logic
             {
                 _Logger.Write(_LogCategory, $"Get Stop duration and Break for Line {LineId} Error: {ex}", LogType.Error);
             }
-            return _stopDuration;
-
         }
 
         #endregion
@@ -7367,6 +7684,331 @@ namespace iAndon.Biz.Logic
             }
         }
         */
+        #endregion
+
+        #region MQTT
+        private async Task ConnectEMQXAsync()
+        {
+            try
+            {
+                _Logger.Write(_LogCategory, $"Connecting to RabbitMQ {_RabbitMQHost}", LogType.Info);
+                if (SubFactory == null)
+                {
+                    SubFactory = new MqttFactory();
+                }
+                if (SubClient == null)
+                {
+                    SubClient = (MqttClient)SubFactory.CreateMqttClient();
+                }
+
+                // Create MQTT client options
+                var options = new MqttClientOptionsBuilder()
+                    .WithTcpServer(_MQTTHost, _MQTTPort) // MQTT broker address and port
+                    .WithCredentials(_MQTTUser, _MQTTPassword) // Set username and password
+                    .WithClientId("client_biz_sub")
+                    .WithCleanSession()
+                    .Build();
+
+
+                if (!SubClient.IsConnected)
+                {
+
+                    var connectResult = await SubClient.ConnectAsync(options);
+
+                    if (connectResult.ResultCode == MqttClientConnectResultCode.Success)
+                    {
+                        _Logger.Write(_LogCategory, $"Connected to MQTT broker successfully.", LogType.Info);
+
+                        // Subscribe to a topic
+                        string _topic_all = _MQTTTopic + "/telemetry/" + _MQTTGateways + "/" + _MQTTDevicesType;
+                        string _topic_event = _topic_all + "/events/#";
+
+                        //var mqttSubscribeOptions = factory.CreateSubscribeOptionsBuilder()
+                        //    .WithTopicFilter(t => t
+                        //        .WithTopic(_topic_all)
+                        //        .WithAtLeastOnceQoS()
+                        //        .WithRetainHandling(MqttRetainHandling.SendAtSubscribe))
+                        //    .WithTopicFilter(t => t
+                        //        .WithTopic(_topic_event)
+                        //        .WithAtMostOnceQoS()
+                        //        .WithRetainHandling(MqttRetainHandling.SendAtSubscribe))
+                        //    .Build();
+
+                        //var response = await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
+
+                        await SubClient.SubscribeAsync(_topic_all);
+                        await SubClient.SubscribeAsync(_topic_event);
+
+                        // Callback function when a message is received
+                        SubClient.ApplicationMessageReceivedAsync += HandleMessageAsync;
+
+                    }
+                    ;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, ex);
+            }
+        }
+
+        private async Task HandleMessageAsync(MqttApplicationMessageReceivedEventArgs e)
+        {
+            try
+            {
+                // Lấy dữ liệu từ PayloadSegment
+                var payload = e.ApplicationMessage.Payload;
+
+                if (payload.Length > 0)
+                {
+                    DateTime timestamp = DateTime.Now.AddMilliseconds(0 - DateTime.Now.Millisecond);
+
+                    var topic = e.ApplicationMessage.Topic;
+                    // Chuyển byte array thành chuỗi JSON
+                    var json = System.Text.Encoding.UTF8.GetString(payload);
+
+                    //Xử lý message ở đây
+                    if (json.Contains("timestamp"))
+                    {
+                        List<IO_Message> messages = GetMessages(json);
+
+                        foreach (var message in messages)
+                        {
+                            _Logger.Write(_LogCategory, $"message: {JsonConvert.SerializeObject(message)}", LogType.Debug); // Log để kiểm tra dữ liệu thô
+                            _IO_DataQueue.Enqueue(message);
+                        }
+                    }
+                    else
+                    {
+                        var obj = JObject.Parse(json);
+
+                        IO_Message message = new IO_Message()
+                        {
+                            Timestamp = timestamp,
+                            Id = (int)obj["id"],
+                            IsConnect = (bool)obj["isConnect"],
+                            Input01 = (int)obj["outputs"][3],
+                            Input02 = (int)obj["outputs"][1],
+                            Input03 = (int)obj["inputs"][2],
+                            Input04 = (int)obj["inputs"][3],
+                            Output01 = (int)obj["outputs"][0],
+                            Output02 = (int)obj["outputs"][1],
+                            Output03 = (int)obj["outputs"][2],
+                            Output04 = (int)obj["outputs"][3],
+                        };
+                        _Logger.Write(_LogCategory, $"message: {JsonConvert.SerializeObject(message)}", LogType.Debug); // Log để kiểm tra dữ liệu thô
+                        _IO_DataQueue.Enqueue(message);
+                    }
+
+                    await ProcessMessageAsync();
+
+                }
+                else
+                {
+                    _Logger.Write(_LogCategory, "Received empty payload from EMQX", LogType.Error);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, "Error processing MQTT message", LogType.Error);
+            }
+           // return Task.CompletedTask;
+        }
+
+        private async Task ProcessMessageAsync()
+        {
+            try
+            {
+
+                //Lôi message từ Queue để xử lý
+                lock (_IO_DataQueue)
+                {
+                    while (_IO_DataQueue.Count > 0)
+                    {
+                        _IO_ProcessQueue.Enqueue(_IO_DataQueue.Dequeue());
+                    }
+                }
+                _Logger.Write(_LogCategory, $"Start process data in Queue - Total: {_IO_ProcessQueue.Count}", LogType.Debug);
+
+                while(_IO_ProcessQueue.Count > 0)
+                {
+                    IO_Message _new_message = _IO_ProcessQueue.Dequeue();
+                    //Xử lý tại đây ????
+
+                    IO_Message _device = _Devices.FirstOrDefault(x => x.Id == _new_message.Id);
+                    if (_device == null) continue;
+
+                    if (_new_message.IsConnect)
+                    {
+                        await ProcessDevices(_new_message, _device);
+                    }    
+                }
+                //Xử lý xong thì xóa hết đi
+                //lock (_IO_ProcessQueue)
+                //{
+                //    _IO_ProcessQueue.;
+                //}
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Process Data error: {ex}", LogType.Error);
+            }
+        }
+        private Task ProcessDevices(IO_Message _new_message, IO_Message _device)
+        {
+
+            Line line = _Lines.FirstOrDefault(x => x.LINE_ID == _device.Id.ToString());
+            if (line == null) return Task.CompletedTask;
+            if (line.WorkPlan == null) return Task.CompletedTask;
+
+            if (line.EventDefId == Consts.EVENTDEF_BREAK) return Task.CompletedTask;
+            bool isChangeEvent = false, isChangeProduct = false;
+            //Fix demo for SEJONG
+            DateTime timestamp = DateTime.Now.AddMilliseconds(0 - DateTime.Now.Millisecond);
+            string _eventDefId = "1", _reasonId = "0";
+            isChangeEvent = CompareDifferent(_new_message, _device);
+
+           if (_new_message.Input03 == 1)
+            {
+                //Seting
+                _eventDefId = "2";
+                _reasonId = "3";
+                if (_device.Input03 != _new_message.Input03)
+                {
+                    _device.Input03 = _new_message.Input03;
+                    _device.Timestamp = _new_message.Timestamp;
+                    //isChangeEvent = true;
+                }
+            }    
+            else
+            {
+                if (_new_message.Input02 == 1)
+                {
+                    //Máy lỗi
+                    _eventDefId = "2";
+                    _reasonId = "1";
+                    if (_device.Input02 != _new_message.Input02)
+                    {
+                        _device.Input02 = _new_message.Input02;
+                        _device.Timestamp = _new_message.Timestamp;
+                        //isChangeEvent = true;
+                    }
+                }
+                else
+                {
+                    if (_new_message.Input01 == 1)
+                    {
+                        //Chạy
+                        _eventDefId = "1";
+                        _reasonId = "0";
+                    }
+                    else
+                    {
+                        //Chờ đợi
+                        _eventDefId = "2";
+                        _reasonId = "2";
+                        if (_device.Input01 == 1 && _new_message.Input01 == 0) //Đổi chạy qua không chạy
+                        {
+                            isChangeProduct = true;
+                        }
+
+                    }
+                    if (_device.Input01 != _new_message.Input01)
+                    {
+                        _device.Timestamp = _new_message.Timestamp;
+                        _device.Input01 = _new_message.Input01;
+                        //isChangeEvent = true;
+                    }
+                }
+            }
+            _device.Output01 = _new_message.Output01;
+            _device.Output02 = _new_message.Output02;
+            _device.Output03 = _new_message.Output03;
+            _device.Output04 = _new_message.Output04;
+
+            if (isChangeEvent)
+            {
+                ChangeLineEvent(_device.Id.ToString(), _device.Timestamp, _eventDefId, _reasonId);
+                //ProcessSendControlMessageAsync();
+            }
+            if (isChangeProduct)
+            {
+                MES_REPORT_LINE_DETAIL reportLineDetail = line.ReportLineDetails.FirstOrDefault(x => x.STATUS == (short)PLAN_STATUS.Proccessing);
+
+                if (reportLineDetail != null)
+                {
+                    //Lấy 1 bộ giá trị mới nhập
+                    reportLineDetail.ACTUAL_QUANTITY += reportLineDetail.BATCH * reportLineDetail.STATION_QUANTITY;
+                }
+                //ProcessSendControlMessageAsync();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private List<IO_Message> GetMessages(string json)
+        {
+            var root = JsonConvert.DeserializeObject<RootRaw>(json);
+
+            // Convert Unix timestamp (seconds → DateTime)
+            DateTime dt = DateTimeOffset.FromUnixTimeSeconds(root.timestamp)
+                                         .LocalDateTime;
+
+            List<IO_Message> model = new List<IO_Message>();
+
+            foreach (var d in root.devices)
+            {
+                var msg = new IO_Message
+                {
+                    Timestamp = dt,
+                    Id = d.id,
+                    IsConnect = d.isConnect,
+
+                    Input01 = (d.outputs?.Count > 0) ? d.outputs[3] : 0,
+                    Input02 = (d.outputs?.Count > 1) ? d.outputs[1] : 0,
+                    Input03 = (d.inputs?.Count > 2) ? d.inputs[2] : 0,
+                    Input04 = (d.inputs?.Count > 3) ? d.inputs[3] : 0,
+
+                    Output01 = (d.outputs?.Count > 0) ? d.outputs[0] : 0,
+                    Output02 = (d.outputs?.Count > 1) ? d.outputs[1] : 0,
+                    Output03 = (d.outputs?.Count > 2) ? d.outputs[2] : 0,
+                    Output04 = (d.outputs?.Count > 3) ? d.outputs[3] : 0
+                };
+
+                model.Add(msg);
+            }
+
+
+            return model;
+        }
+
+        private bool CompareDifferent(IO_Message message1, IO_Message message2)
+        {
+            //return true;
+            return ((message1.IsConnect != message2.IsConnect) || (message1.Input01 != message2.Input01) || (message1.Input02 != message2.Input02)||(message1.Input03 != message2.Input03)|| (message1.Input04 != message2.Input04));
+        }
+
+        private void CopyValue(ref IO_Message message1, IO_Message message2)
+        {
+            //Gán giá trị
+            message1.Timestamp = message2.Timestamp;
+            message1.IsConnect = message2.IsConnect;
+
+            message1.Input01 = message2.Input01;
+            message1.Input02 = message2.Input02;
+            message1.Input03 = message2.Input03;
+            message1.Input04 = message2.Input04;
+
+            message1.Output01 = message2.Output01;
+            message1.Output02 = message2.Output02;
+            message1.Output03 = message2.Output03;
+            message1.Output04 = message2.Output04;
+        }
+
+
         #endregion
 
         #region RabbitMQ

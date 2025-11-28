@@ -40,6 +40,7 @@ namespace iAndon.Biz.Logic.Models
                 SHIFT_ID = _tblWorkPlan.SHIFT_ID,
                 PLAN_HOUR = _tblWorkPlan.PLAN_HOUR,
                 STATUS = _tblWorkPlan.STATUS,
+                WORKING_ID = _tblWorkPlan.WORKING_ID
             };
 
             workPlan.PlanStart = shift.Start;
@@ -59,6 +60,7 @@ namespace iAndon.Biz.Logic.Models
                 SHIFT_ID = this.SHIFT_ID,
                 PLAN_HOUR = this.PLAN_HOUR,
                 STATUS = this.STATUS,
+                WORKING_ID = this.WORKING_ID,
             };
             return tblWorkPlan;
         }

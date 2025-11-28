@@ -45,6 +45,9 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="MQTTnet, Version=4.3.7.1207, Culture=neutral, PublicKeyToken=fdb7629f2e364a63, processorArchitecture=MSIL">
+      <HintPath>..\packages\MQTTnet.4.3.7.1207\lib\net48\MQTTnet.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -222,6 +225,7 @@
     </Compile>
     <Compile Include="Models\Node.cs" />
     <Compile Include="Models\Line.cs" />
+    <Compile Include="Models\IO_Message.cs" />
     <Compile Include="Models\PMS.cs" />
     <Compile Include="Models\ProductionLevel.cs" />
     <Compile Include="Models\WorkPlan.cs" />
