@@ -84,11 +84,5 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Andon.Biz.Helper\iAndon.Biz.Helper.csproj">
-      <Project>{6a3d41b5-b3c3-4c1e-800a-935874cffa5e}</Project>
-      <Name>iAndon.Biz.Helper</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

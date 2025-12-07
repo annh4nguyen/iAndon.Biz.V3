@@ -137,6 +137,12 @@ namespace iAndon.Biz.Logic
 
         private int _FixTimeDifference = int.Parse(ConfigurationManager.AppSettings["fix_time_difference"]);
 
+        private List<string> _Stations = new List<string>() { "1","2","3","4"};
+
+        //private List<string> _DefaultProducts = new List<string>() { "401", "402", "400"};
+
+        //private List<int> _DefaultQuantitys = new List<int>() { 2000, 2100, 1400 };
+
         #endregion
 
         #region props
@@ -199,6 +205,7 @@ namespace iAndon.Biz.Logic
 
         private List<DM_MES_PRODUCT> _Products = new List<DM_MES_PRODUCT>();
         private List<DM_MES_PRODUCT_CONFIG> _ProductConfigs = new List<DM_MES_PRODUCT_CONFIG>();
+        private List<MES_PRODUCT_CYCLE_TIME> _ProductCycleTimes = new List<MES_PRODUCT_CYCLE_TIME>();
         private List<DM_MES_PRODUCT_CATEGORY> _ProductCategories = new List<DM_MES_PRODUCT_CATEGORY>();
 
         private List<WorkPlan> _WorkPlans = new List<WorkPlan>();
@@ -521,6 +528,7 @@ namespace iAndon.Biz.Logic
             try
             {
                 START_SERVICE_TIME = DateTime.Now.AddSeconds(0);
+
                 using (Entities _dbContext = new Entities())
                 {
                     //_Customers = _dbContext.tblCustomers.ToList();
@@ -535,6 +543,7 @@ namespace iAndon.Biz.Logic
                     //_LineEvents = _dbContext.tblLineEvents.Where(x => !x.Finish.HasValue).ToList();
                     _Products = _dbContext.DM_MES_PRODUCT.Where(x => x.ACTIVE).ToList();
                     _ProductConfigs = _dbContext.DM_MES_PRODUCT_CONFIG.ToList();
+                    _ProductCycleTimes = _dbContext.MES_PRODUCT_CYCLE_TIME.ToList();
                     _ProductCategories = _dbContext.DM_MES_PRODUCT_CATEGORY.ToList();
                     _Configurations = _dbContext.DM_MES_CONFIGURATION.ToList();
 
@@ -2958,7 +2967,7 @@ namespace iAndon.Biz.Logic
         private void WriteSyncData(PMS_BodyMessage result,  string lineCode)
         {
             string _rawMessage = JsonConvert.SerializeObject(result); 
-            _Rawer.Write(_LogCategory, $"{_rawMessage}", LogType.Info, lineCode);
+            //_Rawer.Write(_LogCategory, $"{_rawMessage}", LogType.Info, lineCode);
         }
 
         #endregion
@@ -3251,6 +3260,7 @@ namespace iAndon.Biz.Logic
                                 _Logger.Write(_LogCategory, $"Calculate to RUN Report Detail: Time [{detail.TIME_NAME}] - Product [{detail.PRODUCT_CODE}] - Qty [{detail.PLAN_QUANTITY}] - Line : {line.LINE_ID}", LogType.Debug);
 
                                 detail.STATUS = (int)PLAN_STATUS.Proccessing;
+                                detail.STARTED = eventTime;
 
                                 //Kiểm tra luôn thằng vỏ chạy chưa
                                 if (reportLine != null)
@@ -4501,6 +4511,80 @@ namespace iAndon.Biz.Logic
 
         #endregion
 
+        #region DemoForSejong
+        /// <summary>
+        /// Hàm bắt event Chạy để khởi tạo sự kiện
+        /// Bắt đầu tạo thêm 1 WorkOrder để làm giả định dữ liệu bắt đầu chạy
+        /// </summary>
+        private void ProccessSignalForStart(int NodeId, DateTime timestamp)
+        {
+            try
+            {
+
+                string _lineId = NodeId.ToString();
+                //Tìm ra line
+                Line line = _Lines.FirstOrDefault(x => x.LINE_ID == _lineId);
+                if (line == null) return;
+                if (!line.ACTIVE) return;
+                //2024-07-15: Bổ sung logic không có WorkPlan thì cũng bỏ qua
+                if (line.WorkPlan == null) return;
+
+                if (line.WorkPlan.STATUS == (int)PLAN_STATUS.Proccessing)
+                {
+                    WorkPlan workPlan = line.WorkPlan;
+                    //Lấy dữ liệu random
+                    Random random = new Random();
+                    int randomNumber = random.Next(3);
+                    int _item = (NodeId + randomNumber) % 3;
+                    //string _productId = _DefaultProducts[_item];
+                    DM_MES_PRODUCT product = _Products.FirstOrDefault(x=>x.PRODUCT_CODE == _DefaultProduct);
+                    MES_PRODUCT_CYCLE_TIME product_cycle_time = _ProductCycleTimes.FirstOrDefault(x => x.PRODUCT_ID == product.PRODUCT_ID);
+                    int _quantity = 1500;
+
+                    MES_WORK_PLAN_DETAIL newWorkPlanDetail = new MES_WORK_PLAN_DETAIL()
+                    {
+                        WORK_PLAN_DETAIL_ID = GenID(),
+                        WORK_PLAN_ID = workPlan.WORK_PLAN_ID,
+                        LINE_ID = line.LINE_ID,
+                        DAY = workPlan.DAY,
+                        SHIFT_ID = workPlan.SHIFT_ID,
+                        PLAN_START = timestamp, //Lấy thời gian hoàn thành Trừ cái đầu tiên
+                        PLAN_FINISH = workPlan.PlanFinish,
+                        WORK_ORDER_CODE = line.LINE_CODE + "-WO-" + Time2Num(timestamp,HourArchive),
+                        WORK_ORDER_PLAN_CODE = line.LINE_CODE + "-PLAN-" + Time2Num(timestamp, HourArchive),
+                        PO_CODE = line.LINE_CODE + "-PO-" + Time2Num(timestamp, HourArchive),
+                        PRODUCT_ID = product.PRODUCT_ID,
+                        PRODUCT_CODE = product.PRODUCT_CODE,
+                        CONFIG_ID = product_cycle_time.PRODUCT_CONFIG_ID,
+                        TAKT_TIME = product_cycle_time.CYCLE_TIME,
+                        ROUTING = 0,
+                        STATION_QUANTITY = (short)product_cycle_time.STATION_QUANTITY,
+                        BATCH = (short)product_cycle_time.BATCH,
+                        HEAD_COUNT = (short)product.HEADCOUNT,
+                        PLAN_QUANTITY = _quantity,
+                        START_AT = 1,
+                        FINISH_AT = _quantity,
+                        DESCRIPTION = "",
+                        STATUS = (int)PLAN_STATUS.Proccessing,
+                    };
+                    line.WorkPlan.WorkPlanDetails.Add(newWorkPlanDetail);
+
+                    //2024-07-15: Chỉ thêm vào cho chạy thôi, theo WorkPlan đã nhập
+                    AddWorkPlanDetail2Time(line.WorkPlan, newWorkPlanDetail);
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Proccess Sync Error: {ex}", LogType.Error);
+            }
+
+        }
+
+
+        #endregion
+
         #region DataProcess
         private void LineProcessData(Line line, DateTime eventTime)
         {
@@ -5203,8 +5287,11 @@ namespace iAndon.Biz.Logic
                         {
                             if (reasonId != oldEvent.REASON_ID)
                             {
-                                isFinishOldEvent = true;
-                                isAddNewEvent = true;
+                                if (newEventDefId == Consts.EVENTDEF_STOP)
+                                {
+                                    isFinishOldEvent = true;
+                                    isAddNewEvent = true;
+                                }
                             }
                             else
                             {
@@ -7691,7 +7778,7 @@ namespace iAndon.Biz.Logic
         {
             try
             {
-                _Logger.Write(_LogCategory, $"Connecting to RabbitMQ {_RabbitMQHost}", LogType.Info);
+                _Logger.Write(_LogCategory, $"Connecting to EMQX {_MQTTHost}", LogType.Info);
                 if (SubFactory == null)
                 {
                     SubFactory = new MqttFactory();
@@ -7759,6 +7846,7 @@ namespace iAndon.Biz.Logic
             {
                 // Lấy dữ liệu từ PayloadSegment
                 var payload = e.ApplicationMessage.Payload;
+                if (payload == null) return;
 
                 if (payload.Length > 0)
                 {
@@ -7772,11 +7860,13 @@ namespace iAndon.Biz.Logic
                     if (json.Contains("timestamp"))
                     {
                         List<IO_Message> messages = GetMessages(json);
-
-                        foreach (var message in messages)
+                        if (messages != null)
                         {
-                            _Logger.Write(_LogCategory, $"message: {JsonConvert.SerializeObject(message)}", LogType.Debug); // Log để kiểm tra dữ liệu thô
-                            _IO_DataQueue.Enqueue(message);
+                            foreach (var message in messages)
+                            {
+                                _Logger.Write(_LogCategory, $"message: {JsonConvert.SerializeObject(message)}", LogType.Debug); // Log để kiểm tra dữ liệu thô
+                                _IO_DataQueue.Enqueue(message);
+                            }
                         }
                     }
                     else
@@ -7787,10 +7877,11 @@ namespace iAndon.Biz.Logic
                         {
                             Timestamp = timestamp,
                             Id = (int)obj["id"],
+
                             IsConnect = (bool)obj["isConnect"],
-                            Input01 = (int)obj["outputs"][3],
-                            Input02 = (int)obj["outputs"][1],
-                            Input03 = (int)obj["inputs"][2],
+                            Input01 = (int)obj["inputs"][2],
+                            Input02 = (int)obj["inputs"][0],
+                            Input03 = (int)obj["inputs"][1],
                             Input04 = (int)obj["inputs"][3],
                             Output01 = (int)obj["outputs"][0],
                             Output02 = (int)obj["outputs"][1],
@@ -7840,6 +7931,13 @@ namespace iAndon.Biz.Logic
                     IO_Message _device = _Devices.FirstOrDefault(x => x.Id == _new_message.Id);
                     if (_device == null) continue;
 
+                    //Kiểm tra timestamp có cập nhật không? Quá 2p thì bỏ qua
+                    if (_new_message.Timestamp < DateTime.Now.AddMinutes(-2))
+                    {
+                        //Bỏ qua không xử lý
+                        continue;
+                    }
+
                     if (_new_message.IsConnect)
                     {
                         await ProcessDevices(_new_message, _device);
@@ -7859,91 +7957,108 @@ namespace iAndon.Biz.Logic
         }
         private Task ProcessDevices(IO_Message _new_message, IO_Message _device)
         {
-
-            Line line = _Lines.FirstOrDefault(x => x.LINE_ID == _device.Id.ToString());
-            if (line == null) return Task.CompletedTask;
-            if (line.WorkPlan == null) return Task.CompletedTask;
-
-            if (line.EventDefId == Consts.EVENTDEF_BREAK) return Task.CompletedTask;
-            bool isChangeEvent = false, isChangeProduct = false;
-            //Fix demo for SEJONG
-            DateTime timestamp = DateTime.Now.AddMilliseconds(0 - DateTime.Now.Millisecond);
-            string _eventDefId = "1", _reasonId = "0";
-            isChangeEvent = CompareDifferent(_new_message, _device);
-
-           if (_new_message.Input03 == 1)
+            try
             {
-                //Seting
-                _eventDefId = "2";
-                _reasonId = "3";
-                if (_device.Input03 != _new_message.Input03)
+                Line line = _Lines.FirstOrDefault(x => x.LINE_ID == _device.Id.ToString());
+                if (line == null) return Task.CompletedTask;
+                if (line.WorkPlan == null) return Task.CompletedTask;
+
+                if (line.EventDefId == Consts.EVENTDEF_BREAK) return Task.CompletedTask;
+                bool isChangeEvent = false, isChangeProduct = false;
+                //Fix demo for SEJONG
+                _new_message.Timestamp = _new_message.Timestamp.AddMilliseconds(0 - DateTime.Now.Millisecond);
+                string _eventDefId = "1", _reasonId = "0";
+
+                if (!_new_message.IsConnect) return Task.CompletedTask;
+
+                if (line.WorkPlan.WorkPlanDetails.Count == 0)
                 {
-                    _device.Input03 = _new_message.Input03;
-                    _device.Timestamp = _new_message.Timestamp;
-                    //isChangeEvent = true;
+                    //Đã có msg lên thì cứ khởi tạo đã
+
+                    ProccessSignalForStart(_device.Id, _new_message.Timestamp);
                 }
-            }    
-            else
-            {
-                if (_new_message.Input02 == 1)
+
+                isChangeEvent = CompareDifferent(_new_message, _device);
+
+                if (_new_message.Input04 == 1)
                 {
-                    //Máy lỗi
+                    //Seting
                     _eventDefId = "2";
-                    _reasonId = "1";
-                    if (_device.Input02 != _new_message.Input02)
-                    {
-                        _device.Input02 = _new_message.Input02;
-                        _device.Timestamp = _new_message.Timestamp;
-                        //isChangeEvent = true;
-                    }
+                    _reasonId = "3";
                 }
                 else
                 {
-                    if (_new_message.Input01 == 1)
+                    if (_new_message.Input03 == 1)
                     {
-                        //Chạy
-                        _eventDefId = "1";
-                        _reasonId = "0";
+                        //Máy lỗi
+                        _eventDefId = "2";
+                        _reasonId = "1";
+                        //if (_device.Input02 != _new_message.Input02)
+                        //{
+                        //    _device.Input02 = _new_message.Input02;
+                        //    _device.Timestamp = _new_message.Timestamp;
+                        //    //isChangeEvent = true;
+                        //}
                     }
                     else
                     {
-                        //Chờ đợi
-                        _eventDefId = "2";
-                        _reasonId = "2";
-                        if (_device.Input01 == 1 && _new_message.Input01 == 0) //Đổi chạy qua không chạy
+                        if (_new_message.Input01 == 1)
                         {
-                            isChangeProduct = true;
+                            //Chạy
+                            _eventDefId = "1";
+                            _reasonId = "0";
                         }
+                        else
+                        {
+                            //Chờ đợi
+                            _eventDefId = "2";
+                            _reasonId = "2";
+                            if (_device.Input01 == 1 && _new_message.Input01 == 0) //Đổi chạy qua không chạy
+                            {
+                                isChangeProduct = true;
+                            }
 
-                    }
-                    if (_device.Input01 != _new_message.Input01)
-                    {
-                        _device.Timestamp = _new_message.Timestamp;
-                        _device.Input01 = _new_message.Input01;
-                        //isChangeEvent = true;
+                        }
+                        //if (_device.Input01 != _new_message.Input01)
+                        //{
+                        //    _device.Timestamp = _new_message.Timestamp;
+                        //    _device.Input01 = _new_message.Input01;
+                        //    //isChangeEvent = true;
+                        //}
                     }
                 }
-            }
-            _device.Output01 = _new_message.Output01;
-            _device.Output02 = _new_message.Output02;
-            _device.Output03 = _new_message.Output03;
-            _device.Output04 = _new_message.Output04;
+                //Đặt bộ giá trị mới
+                _device.Timestamp = _new_message.Timestamp;
+                _device.Input01 = _new_message.Input01;
+                _device.Input02 = _new_message.Input02;
+                _device.Input03 = _new_message.Input03;
+                _device.Input04 = _new_message.Input04;
 
-            if (isChangeEvent)
-            {
-                ChangeLineEvent(_device.Id.ToString(), _device.Timestamp, _eventDefId, _reasonId);
-                //ProcessSendControlMessageAsync();
-            }
-            if (isChangeProduct)
-            {
-                MES_REPORT_LINE_DETAIL reportLineDetail = line.ReportLineDetails.FirstOrDefault(x => x.STATUS == (short)PLAN_STATUS.Proccessing);
+                _device.Output01 = _new_message.Output01;
+                _device.Output02 = _new_message.Output02;
+                _device.Output03 = _new_message.Output03;
+                _device.Output04 = _new_message.Output04;
 
-                if (reportLineDetail != null)
+                if (isChangeEvent)
                 {
-                    //Lấy 1 bộ giá trị mới nhập
-                    reportLineDetail.ACTUAL_QUANTITY += reportLineDetail.BATCH * reportLineDetail.STATION_QUANTITY;
+                    ChangeLineEvent(_device.Id.ToString(), _device.Timestamp, _eventDefId, _reasonId);
+                    //ProcessSendControlMessageAsync();
                 }
-                //ProcessSendControlMessageAsync();
+                if (isChangeProduct)
+                {
+                    MES_REPORT_LINE_DETAIL reportLineDetail = line.ReportLineDetails.FirstOrDefault(x => x.STATUS == (short)PLAN_STATUS.Proccessing);
+
+                    if (reportLineDetail != null)
+                    {
+                        //Lấy 1 bộ giá trị mới nhập
+                        reportLineDetail.ACTUAL_QUANTITY += reportLineDetail.BATCH * reportLineDetail.STATION_QUANTITY;
+                    }
+                    //ProcessSendControlMessageAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Process Devices error: {ex}", LogType.Error);
             }
 
             return Task.CompletedTask;
@@ -7951,38 +8066,47 @@ namespace iAndon.Biz.Logic
 
         private List<IO_Message> GetMessages(string json)
         {
-            var root = JsonConvert.DeserializeObject<RootRaw>(json);
-
-            // Convert Unix timestamp (seconds → DateTime)
-            DateTime dt = DateTimeOffset.FromUnixTimeSeconds(root.timestamp)
-                                         .LocalDateTime;
-
-            List<IO_Message> model = new List<IO_Message>();
-
-            foreach (var d in root.devices)
+            try
             {
-                var msg = new IO_Message
+                var root = JsonConvert.DeserializeObject<RootRaw>(json);
+
+                // Convert Unix timestamp (seconds → DateTime)
+                DateTime dt = DateTimeOffset.FromUnixTimeSeconds(root.timestamp)
+                                             .LocalDateTime;
+
+                List<IO_Message> model = new List<IO_Message>();
+                if (root.devices == null) return null;
+
+                foreach (var d in root.devices)
                 {
-                    Timestamp = dt,
-                    Id = d.id,
-                    IsConnect = d.isConnect,
+                    var msg = new IO_Message
+                    {
+                        Timestamp = dt,
+                        Id = d.id,
+                        IsConnect = d.isConnect,
 
-                    Input01 = (d.outputs?.Count > 0) ? d.outputs[3] : 0,
-                    Input02 = (d.outputs?.Count > 1) ? d.outputs[1] : 0,
-                    Input03 = (d.inputs?.Count > 2) ? d.inputs[2] : 0,
-                    Input04 = (d.inputs?.Count > 3) ? d.inputs[3] : 0,
+                        Input01 = (d.inputs?.Count > 2) ? d.inputs[2] : 0,
+                        Input02 = (d.inputs?.Count > 0) ? d.inputs[0] : 0,
+                        Input03 = (d.inputs?.Count > 1) ? d.inputs[1] : 0,
+                        Input04 = (d.inputs?.Count > 3) ? d.inputs[3] : 0,
 
-                    Output01 = (d.outputs?.Count > 0) ? d.outputs[0] : 0,
-                    Output02 = (d.outputs?.Count > 1) ? d.outputs[1] : 0,
-                    Output03 = (d.outputs?.Count > 2) ? d.outputs[2] : 0,
-                    Output04 = (d.outputs?.Count > 3) ? d.outputs[3] : 0
-                };
+                        Output01 = (d.outputs?.Count > 0) ? d.outputs[0] : 0,
+                        Output02 = (d.outputs?.Count > 1) ? d.outputs[1] : 0,
+                        Output03 = (d.outputs?.Count > 2) ? d.outputs[2] : 0,
+                        Output04 = (d.outputs?.Count > 3) ? d.outputs[3] : 0
+                    };
 
-                model.Add(msg);
+                    model.Add(msg);
+                }
+
+
+                return model;
             }
-
-
-            return model;
+            catch(Exception ex)
+            {
+                _Logger.Write(_LogCategory, $"Process Message IO error: {ex}", LogType.Error);
+            }
+            return null;
         }
 
         private bool CompareDifferent(IO_Message message1, IO_Message message2)

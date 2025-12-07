@@ -16,11 +16,11 @@ namespace iAndon.Biz.Test
         {
             txtCustomerID.Text = ConfigurationManager.AppSettings["CustomerId"];
             txtWebSocketURL.Text = ConfigurationManager.AppSettings["Websocket_Url"];
-            txtRabbitHost.Text = ConfigurationManager.AppSettings["RabbitMQ.Host"];
-            txtRabbitVHost.Text = ConfigurationManager.AppSettings["RabbitMQ.VirtualHost"];
-            txtRabbitUser.Text = ConfigurationManager.AppSettings["RabbitMQ.User"];
-            txtRabbitPassword.Text = ConfigurationManager.AppSettings["RabbitMQ.Password"];
-            txtRabbitInterval.Text = ConfigurationManager.AppSettings["queue_interval"];
+            txtRabbitHost.Text = ConfigurationManager.AppSettings["MQTT.Host"];
+            txtRabbitVHost.Text = ConfigurationManager.AppSettings["MQTT.Port"];
+            txtRabbitUser.Text = ConfigurationManager.AppSettings["MQTT.User"];
+            txtRabbitPassword.Text = ConfigurationManager.AppSettings["MQTT.Gateways"];
+            txtRabbitInterval.Text = ConfigurationManager.AppSettings["MQTT.Topic"];
             txtArchiveInterval.Text = ConfigurationManager.AppSettings["archive_interval"];
             txtLiveInterval.Text = ConfigurationManager.AppSettings["data_live_interval"];
             txtLiveTime.Text = ConfigurationManager.AppSettings["data_live_time"];
@@ -60,5 +60,9 @@ namespace iAndon.Biz.Test
             }
         }
 
+        private void groupBox2_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -32,10 +32,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Avani.Helper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>libs\Avani.Helper.dll</HintPath>
-    </Reference>
+    <Reference Include="Avani.Helper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="EasyNetQ, Version=5.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\EasyNetQ.5.4.0\lib\net461\EasyNetQ.dll</HintPath>
     </Reference>
